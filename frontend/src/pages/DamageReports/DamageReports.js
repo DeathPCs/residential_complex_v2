@@ -249,7 +249,7 @@ const DamageReports = () => {
       return date.toLocaleDateString('es-CO');
       },
     },
-    {
+    ...(user?.role === 'admin' ? [{
       field: 'actions',
       headerName: 'Acciones',
       width: 200,
@@ -285,7 +285,7 @@ const DamageReports = () => {
           </IconButton>
         </Box>
       ),
-    },
+    }] : []),
   ];
 
   return (

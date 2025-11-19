@@ -358,7 +358,7 @@ const Payments = () => {
             >
               {users.map((user) => (
                 <MenuItem key={user.id} value={user.id}>
-                  {`${user.name} (${user.email})`}
+                  {`${user.name}`}
                 </MenuItem>
               ))}
             </TextField>

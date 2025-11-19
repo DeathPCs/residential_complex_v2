@@ -41,6 +41,22 @@ class DamageReportController {
                 images: images || []
             });
 
+            // Notificar al propietario del apartamento
+            if (apartment.assignedUserId) {
+                try {
+                    const priorityText = priority === 'high' ? 'Alta' : priority === 'medium' ? 'Media' : 'Baja';
+                    await prismaService.createNotification({
+                        userId: String(apartment.assignedUserId),
+                        message: `Reporte de Daño - Apartamento ${apartment.number}: ${title}. Prioridad: ${priorityText}.`,
+                        type: 'damage_report',
+                        read: false
+                    });
+                } catch (notificationError) {
+                    console.error('Error creando notificación:', notificationError);
+                    // Continuar sin fallar la creación del reporte
+                }
+            }
+
             console.log('Damage report created successfully:', newReport);
             res.status(201).json({ success: true, data: newReport });
         } catch (error) {

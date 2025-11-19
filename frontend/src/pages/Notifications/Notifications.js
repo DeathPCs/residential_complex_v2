@@ -3,11 +3,6 @@ import {
   Container,
   Typography,
   Box,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   MenuItem,
   Chip,
@@ -21,12 +16,10 @@ import {
   Divider,
 } from '@mui/material';
 import {
-  Add,
   Search,
   Notifications,
   Done,
   NotificationsActive,
-  Edit,
   Delete,
 } from '@mui/icons-material';
 import api, { markNotificationAsRead } from '../../services/api';
@@ -34,15 +27,8 @@ import api, { markNotificationAsRead } from '../../services/api';
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [formData, setFormData] = useState({
-    message: '',
-    userId: '',
-    type: 'general',
-  });
 
   useEffect(() => {
     fetchNotifications();
@@ -60,32 +46,6 @@ const NotificationsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCreate = async () => {
-    try {
-      if (editing) {
-        await api.put(`/notifications/${editing.id}`, formData);
-      } else {
-        await api.post('/notifications', formData);
-      }
-      setOpen(false);
-      setEditing(null);
-      setFormData({ message: '', userId: '', type: 'general' });
-      fetchNotifications();
-    } catch (error) {
-      console.error('Error creating/updating notification:', error);
-    }
-  };
-
-  const handleEdit = (notification) => {
-    setEditing(notification);
-    setFormData({
-      message: notification.message,
-      userId: notification.userId || '',
-      type: notification.type,
-    });
-    setOpen(true);
   };
 
   const handleDelete = async (id) => {
@@ -158,18 +118,12 @@ const NotificationsPage = () => {
             sx={{ minWidth: 150 }}
           >
             <MenuItem value="">Todos</MenuItem>
-            <MenuItem value="general">General</MenuItem>
             <MenuItem value="maintenance">Mantenimiento</MenuItem>
             <MenuItem value="payment">Pago</MenuItem>
-            <MenuItem value="emergency">Emergencia</MenuItem>
+            <MenuItem value="airbnb_registration">Registro Airbnb</MenuItem>
+            <MenuItem value="airbnb_checkin">Check-in Airbnb</MenuItem>
+            <MenuItem value="damage_report">Reporte de Daño</MenuItem>
           </TextField>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setOpen(true)}
-          >
-            Nueva Notificación
-          </Button>
         </Box>
 
         {loading ? (
@@ -196,12 +150,22 @@ const NotificationsPage = () => {
                     secondary={
                       <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                         <Chip
-                          label={notification.type}
+                          label={
+                            notification.type === 'maintenance' ? 'Mantenimiento' :
+                            notification.type === 'payment' ? 'Pago' :
+                            notification.type === 'airbnb_registration' ? 'Registro Airbnb' :
+                            notification.type === 'airbnb_checkin' ? 'Ingreso Airbnb' :
+                            notification.type === 'damage_report' ? 'Reporte de Daño' :
+                            notification.type === 'emergency' ? 'Emergencia' :
+                            'General'
+                          }
                           size="small"
                           color={
                             notification.type === 'emergency' ? 'error' :
                             notification.type === 'maintenance' ? 'warning' :
-                            notification.type === 'payment' ? 'info' : 'default'
+                            notification.type === 'payment' ? 'info' :
+                            notification.type === 'damage_report' ? 'error' :
+                            'default'
                           }
                         />
                         <Typography variant="caption" color="text.secondary">
@@ -211,20 +175,6 @@ const NotificationsPage = () => {
                     }
                   />
                   <ListItemSecondaryAction>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEdit(notification)}
-                      title="Editar"
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(notification.id)}
-                      title="Eliminar"
-                    >
-                      <Delete />
-                    </IconButton>
                     {!notification.read && (
                       <IconButton
                         onClick={() => handleMarkAsRead(notification.id)}
@@ -246,45 +196,6 @@ const NotificationsPage = () => {
           </List>
         )}
       </Paper>
-
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editing ? 'Editar Notificación' : 'Nueva Notificación'}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Usuario ID"
-              value={formData.userId}
-              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Mensaje"
-              value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              multiline
-              rows={3}
-              fullWidth
-            />
-            <TextField
-              select
-              label="Tipo"
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              fullWidth
-            >
-              <MenuItem value="general">General</MenuItem>
-              <MenuItem value="maintenance">Mantenimiento</MenuItem>
-              <MenuItem value="payment">Pago</MenuItem>
-              <MenuItem value="emergency">Emergencia</MenuItem>
-            </TextField>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleCreate} variant="contained">
-            {editing ? 'Actualizar' : 'Enviar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };

@@ -20,14 +20,16 @@ class PaymentController {
             // Notificar al usuario sobre el pago pendiente
             try {
                 const status = paidDate ? (new Date(paidDate) <= new Date(dueDate) ? 'paid' : 'overdue') : 'pending';
+                const title = paidDate ? (status === 'overdue' ? 'Pago registrado con mora' : 'Pago registrado') : 'Nuevo pago pendiente';
+                const message = paidDate
+                    ? `${title}: Se ha registrado un pago de $${paymentWithRelations.amount.toLocaleString('es-ES')} por ${paymentWithRelations.concept}. ${status === 'overdue' ? 'Pago realizado después de la fecha de vencimiento.' : ''}`
+                    : `${title}: Se ha registrado un pago pendiente de $${paymentWithRelations.amount.toLocaleString('es-ES')} por ${paymentWithRelations.concept}. Fecha límite: ${new Date(dueDate).toLocaleDateString('es-ES')}.`;
+                
                 await prismaService.createNotification({
-                    title: paidDate ? (status === 'overdue' ? 'Pago registrado con mora' : 'Pago registrado') : 'Nuevo pago pendiente',
-                    message: paidDate
-                        ? `Se ha registrado un pago de ${paymentWithRelations.amount} por ${paymentWithRelations.concept}. ${status === 'overdue' ? 'Pago realizado después de la fecha de vencimiento.' : ''}`
-                        : `Se ha registrado un pago pendiente de ${paymentWithRelations.amount} por ${paymentWithRelations.concept}. Fecha límite: ${new Date(dueDate).toLocaleDateString()}.`,
+                    userId: String(userId),
+                    message: message,
                     type: 'payment',
-                    recipientType: 'specific_user',
-                    recipientId: userId
+                    read: false
                 });
             } catch (notificationError) {
                 console.error('Error creando notificación para pago:', notificationError);

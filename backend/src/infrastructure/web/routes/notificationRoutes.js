@@ -26,16 +26,7 @@ router.post('/', auth, roleAuth(['admin']), async (req, res, next) => {
 
 router.put('/:id/read', auth, roleAuth(['admin', 'owner', 'tenant', 'airbnb_guest']), async (req, res, next) => {
 	try {
-		const { id } = req.params;
-		const notification = await prismaService.getNotificationById(id);
-		if (!notification) return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
-
-		const updated = await prismaService.updateNotification(id, { read: true });
-		res.json({
-			success: true,
-			data: updated,
-			message: 'Notificación marcada como leída.'
-		});
+		await notificationController.markAsRead(req, res, next);
 	} catch (error) {
 		console.error('Error al marcar notificación como leída:', error, { params: req.params });
 		next({ statusCode: 500, message: 'Error al marcar notificación como leída', details: error.message, stack: error.stack, params: req.params });

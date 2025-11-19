@@ -299,6 +299,9 @@ const Users = () => {
                 setFormData({ name: '', email: '', cedula: '', phone: '', password: '', role: '' });
                 setOpen(true);
               }}
+              sx={{
+                minHeight:60,
+              }}
             >
               Nuevo Usuario
             </Button>

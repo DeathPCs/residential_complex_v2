@@ -15,14 +15,34 @@ class MaintenanceController {
 
             // Crear notificación automática para todos los residentes
             try {
-                await prismaService.createNotification({
-                    title: 'Nuevo mantenimiento programado',
-                    message: `Se ha programado un mantenimiento: ${title}. Área: ${area || 'General'}. Prioridad: ${priority || 'medium'}. Fecha: ${scheduledDate ? new Date(scheduledDate).toLocaleDateString() : 'Por definir'}.`,
-                    type: 'maintenance',
-                    recipientType: 'all'
+                const priorityText = priority === 'high' ? 'Alta' : priority === 'medium' ? 'Media' : 'Baja';
+                const message = `Nuevo mantenimiento programado: ${title}. Área: ${area || 'General'}. Prioridad: ${priorityText}. Fecha: ${scheduledDate ? new Date(scheduledDate).toLocaleDateString('es-ES') : 'Por definir'}.`;
+                
+                // Obtener todos los usuarios activos (residentes, propietarios, inquilinos) para crear notificaciones individuales
+                const users = await prismaService.getUsers({ 
+                    where: { 
+                        status: { in: ['active', 'approved'] },
+                        role: { in: ['owner', 'tenant', 'resident'] }
+                    }, 
+                    take: 1000 
                 });
+                
+                // Crear una notificación para cada usuario
+                const notificationPromises = users.map(user => 
+                    prismaService.createNotification({
+                        userId: String(user.id),
+                        message: message,
+                        type: 'maintenance',
+                        read: false
+                    }).catch(err => {
+                        console.error(`Error creando notificación para usuario ${user.id}:`, err);
+                        return null; // Continuar aunque falle una notificación
+                    })
+                );
+                
+                await Promise.all(notificationPromises);
             } catch (notificationError) {
-                console.error('Error creando notificación para mantenimiento:', notificationError);
+                console.error('Error creando notificaciones para mantenimiento:', notificationError);
                 // No fallar la creación del mantenimiento por error en notificación
             }
 

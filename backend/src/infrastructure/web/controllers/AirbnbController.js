@@ -13,6 +13,25 @@ class AirbnbController {
                 checkOutDate: new Date(checkOutDate),
                 status: 'pending'
             });
+            
+            // Notificar al propietario del apartamento si existe
+            if (apartmentId) {
+                const apartment = await prismaService.getApartmentById(apartmentId);
+                if (apartment && apartment.assignedUserId) {
+                    try {
+                        await prismaService.createNotification({
+                            userId: String(apartment.assignedUserId),
+                            message: `Nuevo huésped Airbnb registrado: ${guestName} (${guestCedula}) para el apartamento ${apartment.number}. Ingreso: ${new Date(checkInDate).toLocaleDateString('es-ES')}, Salida: ${new Date(checkOutDate).toLocaleDateString('es-ES')}.`,
+                            type: 'airbnb_registration',
+                            read: false
+                        });
+                    } catch (notificationError) {
+                        console.error('Error creando notificación:', notificationError);
+                        // Continuar sin fallar el registro del huésped
+                    }
+                }
+            }
+            
             res.status(201).json({
                 success: true,
                 data: newGuest,
@@ -39,16 +58,14 @@ class AirbnbController {
                 if (apartment && apartment.assignedUserId) {
                     try {
                         await prismaService.createNotification({
-                            title: 'Check-in de huésped Airbnb realizado',
-                            message: `El huésped ${guest.guestName} ha realizado check-in en el apartamento ${apartment.number}.`,
+                            userId: String(apartment.assignedUserId),
+                            message: `Ingreso de huésped Airbnb realizado: El huésped ${guest.guestName} ha realizado el ingreso en el apartamento ${apartment.number}.`,
                             type: 'airbnb_checkin',
-                            recipientType: 'specific_user',
-                            userId: apartment.assignedUserId,
-                            apartmentId: guest.apartmentId
+                            read: false
                         });
                     } catch (notificationError) {
-                        console.error('Error creating notification:', notificationError);
-                        // Continue without failing the check-in
+                        console.error('Error creando notificación:', notificationError);
+                        // Continuar sin fallar el ingreso
                     }
                 }
             }
