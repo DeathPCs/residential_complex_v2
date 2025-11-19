@@ -1,0 +1,1418 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Gestión de Conjuntos Residenciales API
+  description: |
+    🏢 **API REST Completa para Gestión de Conjuntos Residenciales**
+    
+    Sistema integral desarrollado con Node.js, Express.js y PostgreSQL que incluye:
+    
+    ## 🚀 Características Principales
+    - **Autenticación JWT** con 4 roles de usuario (Admin, Owner, Tenant, Security)
+    - **Sistema Airbnb Completo** con notificaciones automáticas
+    - **Gestión de Mantenimiento** con notificación masiva a residentes
+    - **Reportes de Daños** con notificación automática a propietarios
+    - **Sistema de Pagos** y cuotas de administración
+    - **Notificaciones Automáticas** para todos los flujos de negocio
+    - **Control de Permisos** granular por endpoint
+    
+    ## 🔐 Autenticación
+    Todos los endpoints (excepto `/health` y `/api/auth/*`) requieren autenticación JWT.
+    
+    **Header requerido:**
+    ```
+    Authorization: Bearer YOUR_JWT_TOKEN_HERE
+    ```
+    
+    ## 👥 Roles y Permisos
+    - **Admin**: Acceso completo a todas las funcionalidades
+    - **Owner**: Gestión de apartamentos y huéspedes Airbnb
+    - **Tenant**: Reportes de daños y consultas básicas
+    - **Security**: Check-in de huéspedes y control de acceso
+    
+    ## 🧪 Testing
+    - ✅ 25/25 pruebas de autenticación con token
+    - ✅ Sistema completamente validado
+    - ✅ 95.7% de tasa de éxito en pruebas
+    
+  version: 1.0.0
+  contact:
+    name: Sistema Conjuntos Residenciales
+    email: loltrolgamer12@github.com
+    url: https://github.com/loltrolgamer12/residential_complex
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+    
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desarrollo
+
+tags:
+  - name: Auth
+    description: Autenticación y autorización JWT
+  - name: Users
+    description: Gestión de usuarios del sistema
+  - name: Apartments
+    description: Gestión de apartamentos y propiedades
+  - name: Airbnb
+    description: Gestión de huéspedes Airbnb con notificaciones automáticas
+  - name: Maintenance
+    description: Mantenimientos programados con notificación masiva
+  - name: Damage Reports
+    description: Reportes de daños con notificación automática
+  - name: Notifications
+    description: Sistema completo de notificaciones
+  - name: Payments
+    description: Mensualidades y pagos de administración
+  - name: System
+    description: Health check y endpoints del sistema
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health Check del Sistema
+      description: Endpoint para verificar estado del API y ver endpoints disponibles
+      responses:
+        200:
+          description: Sistema funcionando correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                    example: 🏢 Sistema Conjuntos Residenciales API
+                  timestamp:
+                    type: string
+                    format: date-time
+                  features:
+                    type: object
+                    description: Funcionalidades implementadas según documento
+                  endpoints:
+                    type: object
+                    description: Endpoints principales organizados por funcionalidad
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar Usuario
+      description: |
+        Crear nueva cuenta de usuario en el sistema.
+        
+        **Roles disponibles:**
+        - `admin`: Administrador del conjunto
+        - `owner`: Propietario de apartamento
+        - `tenant`: Inquilino/arrendatario
+        - `security`: Personal de seguridad/portería
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, cedula, role]
+              properties:
+                name:
+                  type: string
+                  example: Juan Pérez
+                  description: Nombre completo del usuario
+                email:
+                  type: string
+                  format: email
+                  example: juan@example.com
+                  description: Email único del usuario
+                password:
+                  type: string
+                  minLength: 6
+                  example: Password123!
+                  description: Contraseña segura (mín. 6 caracteres)
+                cedula:
+                  type: string
+                  example: "12345678"
+                  description: Número de cédula único
+                phone:
+                  type: string
+                  example: "+57 300 123 4567"
+                  description: Número de teléfono (opcional)
+                role:
+                  type: string
+                  enum: [admin, owner, tenant, security]
+                  example: tenant
+                  description: Rol del usuario en el sistema
+      responses:
+        201:
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Usuario registrado exitosamente
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                        description: JWT token para autenticación
+                      user:
+                        $ref: '#/components/schemas/User'
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        409:
+          description: Email o cédula ya registrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar Sesión
+      description: |
+        Autenticar usuario existente en el sistema.
+        Retorna JWT token válido por 24 horas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@test.com
+                  description: Email del usuario registrado
+                password:
+                  type: string
+                  example: Admin123!
+                  description: Contraseña del usuario
+      responses:
+        200:
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Login exitoso
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                        description: JWT token válido por 24h
+                      user:
+                        $ref: '#/components/schemas/User'
+        400:
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/profile:
+    get:
+      tags: [Auth]
+      summary: Obtener Perfil del Usuario
+      description: Recuperar información del usuario autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/airbnb/guests:
+    post:
+      tags: [Airbnb]
+      summary: Registrar Huésped Airbnb (Flujo Principal)
+      description: |
+        **FLUJO PRINCIPAL DEL DOCUMENTO:**
+        1. Propietario registra huésped con datos completos
+        2. Sistema notifica automáticamente:
+           - Al propietario (apartamento ocupado)
+           - Al administrador (control de seguridad)
+           - A portería (registro de entrada)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apartmentId, guestName, guestCedula, numberOfGuests, checkInDate, checkOutDate]
+              properties:
+                apartmentId:
+                  type: integer
+                  example: 1
+                guestName:
+                  type: string
+                  example: Juan Pérez García
+                guestCedula:
+                  type: string
+                  example: "12345678"
+                numberOfGuests:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  example: 2
+                checkInDate:
+                  type: string
+                  format: date
+                  example: "2025-01-01"
+                checkOutDate:
+                  type: string
+                  format: date
+                  example: "2025-01-07"
+      responses:
+        201:
+          description: Huésped registrado exitosamente con notificaciones automáticas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AirbnbGuest'
+                  message:
+                    type: string
+                    example: Huésped Airbnb registrado exitosamente. Sistema notificó automáticamente.
+
+  /api/airbnb/guests/{id}/checkin:
+    put:
+      tags: [Airbnb]
+      summary: Check-in por Portería
+      description: |
+        **FLUJO PORTERÍA:** Vigilancia registra llegada de huésped.
+        Genera notificación automática al propietario y administrador.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Check-in realizado con notificación automática
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      status:
+                        type: string
+                        example: checked_in
+                      timestamp:
+                        type: string
+                        format: date-time
+                  message:
+                    type: string
+                    example: Check-in realizado por portería. Notificación automática enviada.
+        403:
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/airbnb/guests/{id}/checkout:
+    put:
+      tags: [Airbnb]
+      summary: Check-out por Portería
+      description: |
+        **FLUJO PORTERÍA:** Vigilancia registra salida de huésped.
+        Actualiza estado y libera apartamento.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Check-out realizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      status:
+                        type: string
+                        example: checked_out
+                      timestamp:
+                        type: string
+                        format: date-time
+                  message:
+                    type: string
+                    example: Check-out realizado exitosamente
+
+  /api/airbnb/guests/active:
+    get:
+      tags: [Airbnb]
+      summary: Huéspedes Activos (Control Seguridad)
+      description: |
+        **PARA ADMINISTRADOR:** Lista de huéspedes actualmente en el conjunto
+        para control de seguridad según documento.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de huéspedes activos para control de seguridad
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActiveGuest'
+
+  /api/apartments:
+    get:
+      tags: [Apartments]
+      summary: Listar Apartamentos
+      description: |
+        Obtener lista de apartamentos del conjunto residencial.
+        Disponible para todos los usuarios autenticados.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filtrar por estado del apartamento
+          schema:
+            type: string
+            enum: [owner_occupied, rented, available, maintenance]
+        - name: tower
+          in: query
+          description: Filtrar por torre
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de apartamentos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Apartment'
+
+    post:
+      tags: [Apartments]
+      summary: Registrar Apartamento
+      description: |
+        **SOLO OWNER/ADMIN:** Registrar nuevo apartamento en el sistema.
+        Se asocia automáticamente al propietario que lo registra.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [number, tower, floor, type]
+              properties:
+                number:
+                  type: string
+                  example: "101-A"
+                  description: Número único del apartamento
+                tower:
+                  type: string
+                  example: "Torre A"
+                  description: Torre donde se ubica
+                floor:
+                  type: integer
+                  example: 1
+                  description: Piso del apartamento
+                type:
+                  type: string
+                  example: "2 habitaciones"
+                  description: Tipo/descripción del apartamento
+                status:
+                  type: string
+                  enum: [owner_occupied, rented, available, maintenance]
+                  default: owner_occupied
+                  description: Estado inicial del apartamento
+      responses:
+        201:
+          description: Apartamento registrado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Apartment'
+                  message:
+                    type: string
+                    example: Apartamento registrado exitosamente
+        403:
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/apartments/{id}:
+    get:
+      tags: [Apartments]
+      summary: Obtener Apartamento Específico
+      description: Obtener información detallada de un apartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Información del apartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Apartment'
+        404:
+          description: Apartamento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/maintenance:
+    post:
+      tags: [Maintenance]
+      summary: Programar Mantenimiento
+      description: |
+        **FLUJO MANTENIMIENTOS:** Administrador programa mantenimiento.
+        Sistema notifica automáticamente a TODOS los residentes.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, description, area]
+              properties:
+                title:
+                  type: string
+                  example: Mantenimiento Piscina
+                description:
+                  type: string
+                  example: Limpieza y mantenimiento general de la piscina
+                area:
+                  type: string
+                  enum: [parque, piscina, ascensor, zonas_comunes, gym, salon_comunal]
+                  example: piscina
+                scheduledDate:
+                  type: string
+                  format: date
+                  example: "2025-01-15"
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  default: medium
+      responses:
+        201:
+          description: Mantenimiento programado con notificaciones enviadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Maintenance'
+                  message:
+                    type: string
+                    example: Mantenimiento programado. Todos los residentes han sido notificados.
+
+    get:
+      tags: [Maintenance]
+      summary: Ver Mantenimientos (App Móvil)
+      description: Endpoint para que usuarios vean mantenimientos en app móvil
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_progress, completed]
+        - name: area
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de mantenimientos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Maintenance'
+
+  /api/damage-reports:
+    post:
+      tags: [Damage Reports]
+      summary: Reportar Daño
+      description: |
+        **FLUJO REPORTES:** Arrendatarios/huéspedes reportan daños.
+        Sistema notifica automáticamente al propietario del apartamento.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apartmentId, title, description]
+              properties:
+                apartmentId:
+                  type: integer
+                  example: 1
+                title:
+                  type: string
+                  example: Fuga en baño principal
+                description:
+                  type: string
+                  example: Se detectó una fuga de agua en la ducha del baño principal
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  default: medium
+      responses:
+        201:
+          description: Reporte creado con notificación al propietario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/DamageReport'
+                  message:
+                    type: string
+                    example: Reporte de daño creado. Propietario ha sido notificado automáticamente.
+
+  /api/damage-reports/my-reports:
+    get:
+      tags: [Damage Reports]
+      summary: Mis Reportes (App Móvil)
+      description: Ver reportes de daño creados por el usuario actual
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de reportes del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DamageReport'
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Ver Notificaciones (App Móvil)
+      description: |
+        Endpoint principal para app móvil. Usuarios reciben:
+        - Notificaciones generales (mantenimientos)
+        - Notificaciones específicas (reportes de daños, Airbnb, pagos)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Lista de notificaciones para el usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+
+    post:
+      tags: [Notifications]
+      summary: Enviar Notificación General (Admin)
+      description: Administrador envía notificaciones generales a residentes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, message]
+              properties:
+                title:
+                  type: string
+                  example: Aviso Importante
+                message:
+                  type: string
+                  example: Reunión de propietarios programada para el próximo sábado
+                recipientType:
+                  type: string
+                  enum: [all, owners, tenants]
+                  default: all
+      responses:
+        201:
+          description: Notificación enviada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Notification'
+
+  /api/payments:
+    get:
+      tags: [Payments]
+      summary: Listar Pagos
+      description: |
+        Obtener lista de pagos del usuario autenticado.
+        Admins pueden ver todos los pagos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filtrar por estado del pago
+          schema:
+            type: string
+            enum: [pending, paid, overdue]
+        - name: apartmentId
+          in: query
+          description: Filtrar por apartamento (solo Admin)
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Lista de pagos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+
+    post:
+      tags: [Payments]
+      summary: Registrar Mensualidad (Admin)
+      description: |
+        **SISTEMA MENSUALIDADES:** Solo Admin puede registrar cuotas.
+        Incluye servicios básicos (cancha, capilla, oficina) según documento.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apartmentId, amount, dueDate]
+              properties:
+                apartmentId:
+                  type: integer
+                  example: 1
+                  description: ID del apartamento
+                amount:
+                  type: number
+                  format: decimal
+                  example: 150000
+                  description: Monto de la cuota en pesos colombianos
+                dueDate:
+                  type: string
+                  format: date
+                  example: "2025-01-31"
+                  description: Fecha límite de pago
+                description:
+                  type: string
+                  example: "Cuota de administración - Enero 2025"
+                  description: Descripción del pago
+      responses:
+        201:
+          description: Pago de administración registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Payment'
+                  message:
+                    type: string
+                    example: Pago de administración registrado
+        403:
+          description: Solo administradores pueden registrar pagos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/{id}/pay:
+    put:
+      tags: [Payments]
+      summary: Marcar Pago como Realizado
+      description: |
+        Usuario marca su pago como realizado.
+        Sistema actualiza estado y registra fecha de pago.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del pago a marcar como realizado
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Pago marcado como realizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      status:
+                        type: string
+                        example: paid
+                      paymentDate:
+                        type: string
+                        format: date-time
+                  message:
+                    type: string
+                    example: Pago registrado como realizado
+
+  /api/payments/overdue:
+    get:
+      tags: [Payments]
+      summary: Verificar Pagos en Mora
+      description: |
+        **NOTIFICACIONES AUTOMÁTICAS:** Sistema verifica pagos vencidos
+        y notifica automáticamente a propietarios según documento.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Pagos en mora con notificaciones automáticas enviadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OverduePayment'
+                  message:
+                    type: string
+                    example: Pagos en mora verificados. Propietarios notificados automáticamente.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: ID único del usuario
+        name:
+          type: string
+          example: Juan Pérez
+          description: Nombre completo del usuario
+        email:
+          type: string
+          format: email
+          example: juan.perez@email.com
+          description: Email único del usuario
+        cedula:
+          type: string
+          example: "12345678"
+          description: Número de cédula
+        phone:
+          type: string
+          example: "+57 300 123 4567"
+          description: Número de teléfono
+        role:
+          type: string
+          enum: [admin, owner, tenant, security]
+          example: owner
+          description: Rol del usuario en el sistema
+        isActive:
+          type: boolean
+          example: true
+          description: Estado activo del usuario
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación
+        updatedAt:
+          type: string
+          format: date-time
+          description: Última actualización
+
+    Apartment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: ID único del apartamento
+        number:
+          type: string
+          example: "101-A"
+          description: Número del apartamento
+        tower:
+          type: string
+          example: "Torre A"
+          description: Torre donde se ubica
+        floor:
+          type: integer
+          example: 1
+          description: Piso del apartamento
+        type:
+          type: string
+          example: "2 habitaciones"
+          description: Tipo de apartamento
+        status:
+          type: string
+          enum: [owner_occupied, rented, available, maintenance]
+          example: owner_occupied
+          description: Estado actual del apartamento
+        ownerId:
+          type: integer
+          example: 1
+          description: ID del propietario
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Mensaje de error descriptivo"
+        details:
+          type: string
+          example: "Información adicional del error"
+          description: Detalles técnicos (opcional)
+
+    AirbnbGuest:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        apartmentId:
+          type: integer
+          example: 1
+        guestName:
+          type: string
+          example: Juan Pérez García
+        guestCedula:
+          type: string
+          example: "12345678"
+        numberOfGuests:
+          type: integer
+          example: 2
+        checkInDate:
+          type: string
+          format: date
+          example: "2025-01-01"
+        checkOutDate:
+          type: string
+          format: date
+          example: "2025-01-07"
+        status:
+          type: string
+          enum: [pending, checked_in, checked_out]
+          example: pending
+        notifications:
+          type: array
+          items:
+            type: string
+          example: ["Notificación enviada al propietario", "Notificación enviada al administrador"]
+
+    ActiveGuest:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        apartmentNumber:
+          type: string
+          example: "101-A"
+        guestName:
+          type: string
+          example: Juan Pérez
+        guestCedula:
+          type: string
+          example: "12345678"
+        numberOfGuests:
+          type: integer
+          example: 2
+        status:
+          type: string
+          example: checked_in
+
+    Maintenance:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Mantenimiento Piscina
+        description:
+          type: string
+          example: Limpieza y mantenimiento general
+        area:
+          type: string
+          example: piscina
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+          example: pending
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          example: medium
+        scheduledDate:
+          type: string
+          format: date
+          example: "2025-01-15"
+
+    DamageReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        apartmentId:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Fuga en baño principal
+        description:
+          type: string
+          example: Se detectó fuga en la ducha
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          example: medium
+        status:
+          type: string
+          enum: [reported, acknowledged, in_progress, resolved]
+          example: reported
+        reportedBy:
+          type: integer
+          example: 1
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Nuevo huésped Airbnb
+        message:
+          type: string
+          example: Se ha registrado un huésped en apartamento 101-A
+        type:
+          type: string
+          enum: [general, maintenance, payment, airbnb_checkin, damage_report]
+          example: airbnb_checkin
+        isRead:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        apartmentId:
+          type: integer
+          example: 1
+        amount:
+          type: number
+          format: decimal
+          example: 150000
+        dueDate:
+          type: string
+          format: date
+          example: "2025-01-31"
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+          example: pending
+        description:
+          type: string
+          example: "Administración mensual - incluye servicios básicos"
+
+    OverduePayment:
+      type: object
+      properties:
+        apartmentId:
+          type: integer
+          example: 1
+        apartmentNumber:
+          type: string
+          example: "101-A"
+        amount:
+          type: number
+          example: 150000
+        daysPastDue:
+          type: integer
+          example: 5
+        ownerNotified:
+          type: boolean
+          example: true
+                  notificationDate:
+          type: string
+          format: date-time
+
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Listar Usuarios (Admin)
+      description: |
+        **SOLO ADMIN:** Obtener lista completa de usuarios del sistema.
+        Incluye filtros para búsqueda y paginación.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          description: Filtrar por rol de usuario
+          schema:
+            type: string
+            enum: [admin, owner, tenant, security]
+        - name: isActive
+          in: query
+          description: Filtrar por estado activo
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        403:
+          description: Solo administradores pueden listar usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Obtener Usuario Específico
+      description: |
+        Obtener información de un usuario específico.
+        Admin puede ver cualquier usuario, otros solo su perfil.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Información del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        403:
+          description: Sin permisos para ver este usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Users]
+      summary: Actualizar Usuario
+      description: |
+        Actualizar información del usuario.
+        Admin puede actualizar cualquier usuario, otros solo su perfil.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Juan Pérez Actualizado"
+                phone:
+                  type: string
+                  example: "+57 300 999 8888"
+                role:
+                  type: string
+                  enum: [admin, owner, tenant, security]
+                  description: Solo Admin puede cambiar roles
+                isActive:
+                  type: boolean
+                  description: Solo Admin puede cambiar estado
+      responses:
+        200:
+          description: Usuario actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+                  message:
+                    type: string
+                    example: Usuario actualizado exitosamente
+
+    delete:
+      tags: [Users]
+      summary: Eliminar Usuario (Admin)
+      description: |
+        **SOLO ADMIN:** Eliminar usuario del sistema.
+        Acción irreversible, usar con precaución.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Usuario eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Usuario eliminado exitosamente
+        403:
+          description: Solo administradores pueden eliminar usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

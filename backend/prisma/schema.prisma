@@ -1,0 +1,131 @@
+// Esquema completo de Prisma para el complejo residencial
+// Incluye: User, Apartment, AirbnbGuest, DamageReport, Maintenance, Notification, Payment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  name          String
+  email         String          @unique
+  cedula        String          @unique
+  phone         String?
+  role          String          @default("resident")
+  status        String          @default("pending")
+  password      String
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  apartments    Apartment[]
+  apartmentsAssigned Apartment[] @relation("AssignedApartments")
+  payments      Payment[]
+  notifications Notification[]
+  damageReports DamageReport[]
+
+  @@map("users")
+}
+
+model Apartment {
+  id            String          @id @default(uuid())
+  number        String
+  tower         String
+  floor         Int
+  ownerId       String?         @map("owner_id")
+  assignedUserId String?        @map("assigned_user_id")
+  assignedRole  String?
+  status        String          @default("vacant")
+  type          String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  owner         User?           @relation(fields: [ownerId], references: [id])
+  assignedUser  User?           @relation("AssignedApartments", fields: [assignedUserId], references: [id])
+  airbnbGuests  AirbnbGuest[]
+  damageReports DamageReport[]
+  payments      Payment[]
+
+  @@map("apartments")
+}
+
+model AirbnbGuest {
+  id              String    @id @default(uuid())
+  relationId      String?   @map("relation_id")
+  guestName       String    @map("guest_name")
+  guestCedula     String    @map("guest_cedula")
+  numberOfGuests  Int       @map("number_of_guests")
+  checkInDate     DateTime  @map("check_in_date")
+  checkOutDate    DateTime  @map("check_out_date")
+  status          String    @default("pending")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  apartmentId     String?   @map("apartment_id")
+  apartment       Apartment? @relation(fields: [apartmentId], references: [id])
+
+  @@map("airbnb_guests")
+}
+
+model DamageReport {
+  id          String    @id @default(uuid())
+  apartmentId String    @map("apartment_id")
+  reportedBy  String    @map("reported_by")
+  title       String
+  description String?
+  priority    String    @default("low")
+  status      String    @default("reported")
+  images      String[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  reporter    User      @relation(fields: [reportedBy], references: [id])
+
+  @@map("damage_reports")
+}
+
+model Maintenance {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  area          String
+  status        String    @default("pending")
+  priority      String?
+  scheduledDate DateTime? @map("scheduled_date")
+  completedDate DateTime? @map("completed_date")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("maintenances")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  message   String
+  type      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  apartmentId String?  @map("apartment_id")
+  amount      Float
+  concept     String?
+  status      String   @default("pending")
+  dueDate     DateTime? @map("due_date")
+  paidDate    DateTime? @map("paid_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id])
+  apartment   Apartment? @relation(fields: [apartmentId], references: [id])
+
+  @@map("payments")
+}
