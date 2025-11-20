@@ -15,6 +15,7 @@ import {
   InputAdornment,
   IconButton,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -27,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { getUsers, getApartments, getPayments, registerPaymentAsPaid, createPayment, updatePayment, deletePayment } from '../../services/api';
 import Loading from '../../components/common/Loading';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { AuthContext } from '../../context/AuthContext';
 
 const Payments = () => {
@@ -39,6 +41,9 @@ const Payments = () => {
   const [users, setUsers] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, concept: '' });
+  const [formErrors, setFormErrors] = useState({});
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     userId: '',
@@ -95,21 +100,69 @@ const Payments = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.userId) {
+      errors.userId = 'El usuario es requerido';
+    }
+    
+    if (!formData.apartmentId) {
+      errors.apartmentId = 'El apartamento es requerido';
+    }
+    
+    if (!formData.amount || formData.amount === '') {
+      errors.amount = 'El monto es requerido';
+    } else {
+      const amountNum = parseFloat(formData.amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        errors.amount = 'El monto debe ser un número mayor a 0';
+      } else if (amountNum > 999999999) {
+        errors.amount = 'El monto no puede exceder 999,999,999';
+      }
+    }
+    
+    if (formData.concept && formData.concept.length > 200) {
+      errors.concept = 'El concepto no puede exceder 200 caracteres';
+    }
+    
+    if (!formData.dueDate) {
+      errors.dueDate = 'La fecha de vencimiento es requerida';
+    }
+    
+    if (formData.paidDate && formData.dueDate) {
+      const paid = new Date(formData.paidDate);
+      const due = new Date(formData.dueDate);
+      if (paid < due && paid < new Date(due.getTime() - 365 * 24 * 60 * 60 * 1000)) {
+        errors.paidDate = 'La fecha de pago no puede ser más de un año antes de la fecha de vencimiento';
+      }
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       if (editing) {
         await updatePayment(editing.id, formData);
+        setSuccess('Pago actualizado exitosamente');
       } else {
         await createPayment(formData);
+        setSuccess('Pago registrado exitosamente');
       }
       setOpen(false);
       setEditing(null);
       setFormData({ userId: '', apartmentId: '', amount: '', concept: 'Pago de administración', dueDate: '', paidDate: '' });
+      setFormErrors({});
       fetchPayments();
     } catch (error) {
       console.error('Error creating/updating payment:', error);
       setError(error.userMessage || 'Error al crear/actualizar pago');
-      // No hacer fetchPayments aquí para evitar llamadas duplicadas
     }
   };
 
@@ -123,18 +176,24 @@ const Payments = () => {
       dueDate: payment.dueDate ? payment.dueDate.split('T')[0] : '',
       paidDate: payment.paidDate ? payment.paidDate.split('T')[0] : '',
     });
+    setFormErrors({});
     setOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este pago?')) {
-      try {
-        await deletePayment(id);
-        fetchPayments();
-      } catch (error) {
-        console.error('Error deleting payment:', error);
-        setError(error.userMessage || 'Error al eliminar pago');
-      }
+  const handleDeleteClick = (id, concept) => {
+    setDeleteDialog({ open: true, id, concept: concept || 'este pago' });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deletePayment(deleteDialog.id);
+      setSuccess('Pago eliminado exitosamente');
+      setDeleteDialog({ open: false, id: null, concept: '' });
+      fetchPayments();
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      setError(error.userMessage || 'Error al eliminar pago');
+      setDeleteDialog({ open: false, id: null, concept: '' });
     }
   };
 
@@ -143,6 +202,7 @@ const Payments = () => {
 
     try {
       await registerPaymentAsPaid(id);
+      setSuccess('Pago marcado como realizado exitosamente');
       fetchPayments();
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -261,7 +321,7 @@ const Payments = () => {
           </IconButton>
           <IconButton
             color="error"
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => handleDeleteClick(params.row.id, params.row.concept)}
             title="Eliminar"
           >
             <Delete />
@@ -327,6 +387,7 @@ const Payments = () => {
               onClick={() => {
                 setEditing(null);
                 setFormData({ userId: '', apartmentId: '', amount: '', concept: 'Pago de administración', dueDate: '', paidDate: '' });
+                setFormErrors({});
                 setOpen(true);
               }}
             >
@@ -347,8 +408,22 @@ const Payments = () => {
         </Box>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center', color: '#004272' }}>
+      <Dialog 
+        open={open} 
+        onClose={() => {
+          setOpen(false);
+          setFormErrors({});
+        }} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '8px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
           {editing ? 'Editar Pago' : 'Registrar pago de administración'}
         </DialogTitle>
         <DialogContent>
@@ -357,9 +432,14 @@ const Payments = () => {
               select
               label="Selecciona usuario"
               value={formData.userId}
-              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, userId: e.target.value });
+                if (formErrors.userId) setFormErrors({ ...formErrors, userId: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.userId}
+              helperText={formErrors.userId}
             >
               {users.map((user) => (
                 <MenuItem key={user.id} value={user.id}>
@@ -371,9 +451,14 @@ const Payments = () => {
               select
               label="Selecciona apartamento"
               value={formData.apartmentId}
-              onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, apartmentId: e.target.value });
+                if (formErrors.apartmentId) setFormErrors({ ...formErrors, apartmentId: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.apartmentId}
+              helperText={formErrors.apartmentId}
             >
               {apartments.map((apartment) => (
                 <MenuItem key={apartment.id} value={apartment.id}>
@@ -385,47 +470,100 @@ const Payments = () => {
               label="Monto"
               type="number"
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, amount: value });
+                if (formErrors.amount) setFormErrors({ ...formErrors, amount: '' });
+              }}
               fullWidth
               required
-              placeholder="Monto a cobrar"
+              error={!!formErrors.amount}
+              helperText={formErrors.amount || 'Monto mayor a 0'}
+              inputProps={{ min: 0.01, max: 999999999, step: 0.01 }}
             />
             <TextField
               label="Concepto"
               value={formData.concept}
-              onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 200);
+                setFormData({ ...formData, concept: value });
+                if (formErrors.concept) setFormErrors({ ...formErrors, concept: '' });
+              }}
               fullWidth
-              placeholder="Concepto (opcional)"
+              error={!!formErrors.concept}
+              helperText={formErrors.concept || 'Opcional - Máximo 200 caracteres'}
+              inputProps={{ maxLength: 200 }}
             />
             <TextField
               label="Fecha de vencimiento"
               type="date"
               value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, dueDate: e.target.value });
+                if (formErrors.dueDate) setFormErrors({ ...formErrors, dueDate: '' });
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
               required
+              error={!!formErrors.dueDate}
+              helperText={formErrors.dueDate}
             />
             <TextField
               label="Fecha de pago"
               type="date"
               value={formData.paidDate}
-              onChange={(e) => setFormData({ ...formData, paidDate: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, paidDate: e.target.value });
+                if (formErrors.paidDate) setFormErrors({ ...formErrors, paidDate: '' });
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
+              error={!!formErrors.paidDate}
+              helperText={formErrors.paidDate || 'Opcional'}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
           <Button
             onClick={handleCreate}
             variant="contained"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
           >
             {editing ? 'Actualizar' : 'Registrar'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, concept: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Pago"
+        message={`¿Estás seguro de que quieres eliminar el pago "${deleteDialog.concept}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
+
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

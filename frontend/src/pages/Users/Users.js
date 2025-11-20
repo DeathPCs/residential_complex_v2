@@ -15,6 +15,7 @@ import {
   InputAdornment,
   IconButton,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -26,9 +27,12 @@ import {
   People,
   Home,
   Refresh,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/api';
 import Loading from '../../components/common/Loading';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { AuthContext } from '../../context/AuthContext';
 
 const RESIDENT_TYPES = [
@@ -47,6 +51,10 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, name: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -81,16 +89,69 @@ const Users = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'El nombre es requerido';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'El nombre debe tener al menos 2 caracteres';
+    } else if (formData.name.trim().length > 100) {
+      errors.name = 'El nombre no puede exceder 100 caracteres';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'El email es requerido';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'El email no es válido';
+    } else if (formData.email.length > 255) {
+      errors.email = 'El email no puede exceder 255 caracteres';
+    }
+    
+    if (!formData.cedula.trim()) {
+      errors.cedula = 'La cédula es requerida';
+    } else if (!/^\d{7,10}$/.test(formData.cedula.trim())) {
+      errors.cedula = 'La cédula debe tener entre 7 y 10 dígitos';
+    }
+    
+    if (formData.phone && formData.phone.trim() && !/^\d{7,15}$/.test(formData.phone.trim())) {
+      errors.phone = 'El teléfono debe tener entre 7 y 15 dígitos';
+    }
+    
+    if (!editing && !formData.password.trim()) {
+      errors.password = 'La contraseña es requerida';
+    } else if (!editing && formData.password.length < 6) {
+      errors.password = 'La contraseña debe tener al menos 6 caracteres';
+    } else if (!editing && formData.password.length > 50) {
+      errors.password = 'La contraseña no puede exceder 50 caracteres';
+    }
+    
+    if (!formData.role) {
+      errors.role = 'El rol es requerido';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       if (editing) {
         await updateUser(editing.id, formData);
+        setSuccess('Usuario actualizado exitosamente');
       } else {
         await createUser(formData);
+        setSuccess('Usuario creado exitosamente');
       }
       setOpen(false);
       setEditing(null);
       setFormData({ name: '', email: '', cedula: '', phone: '', password: '', role: '' });
+      setFormErrors({});
+      setShowPassword(false);
       fetchUsers();
     } catch (error) {
       console.error('Error creating/updating user:', error);
@@ -108,18 +169,25 @@ const Users = () => {
       password: '', // No mostrar contraseña existente
       role: user.role,
     });
+    setFormErrors({});
+    setShowPassword(false);
     setOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-      try {
-        await deleteUser(id);
-        fetchUsers();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        setError(error.userMessage || 'Error al eliminar usuario');
-      }
+  const handleDeleteClick = (id, name) => {
+    setDeleteDialog({ open: true, id, name });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteUser(deleteDialog.id);
+      setSuccess('Usuario eliminado exitosamente');
+      setDeleteDialog({ open: false, id: null, name: '' });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError(error.userMessage || 'Error al eliminar usuario');
+      setDeleteDialog({ open: false, id: null, name: '' });
     }
   };
 
@@ -209,7 +277,7 @@ const Users = () => {
           </IconButton>
           <IconButton
             color="error"
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => handleDeleteClick(params.row.id, params.row.name)}
             title="Eliminar"
           >
             <Delete />
@@ -303,6 +371,8 @@ const Users = () => {
               onClick={() => {
                 setEditing(null);
                 setFormData({ name: '', email: '', cedula: '', phone: '', password: '', role: '' });
+                setFormErrors({});
+                setShowPassword(false);
                 setOpen(true);
               }}
               sx={{
@@ -335,48 +405,101 @@ const Users = () => {
             <TextField
               label="Nombre"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 100);
+                setFormData({ ...formData, name: value });
+                if (formErrors.name) setFormErrors({ ...formErrors, name: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.name}
+              helperText={formErrors.name}
+              inputProps={{ maxLength: 100 }}
             />
             <TextField
               label="Email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 255);
+                setFormData({ ...formData, email: value });
+                if (formErrors.email) setFormErrors({ ...formErrors, email: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.email}
+              helperText={formErrors.email}
+              inputProps={{ maxLength: 255 }}
             />
             <TextField
               label="Cédula"
               value={formData.cedula}
-              onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setFormData({ ...formData, cedula: value });
+                if (formErrors.cedula) setFormErrors({ ...formErrors, cedula: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.cedula}
+              helperText={formErrors.cedula || 'Entre 7 y 10 dígitos'}
+              inputProps={{ maxLength: 10 }}
             />
             <TextField
               label="Teléfono"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 15);
+                setFormData({ ...formData, phone: value });
+                if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
+              }}
               fullWidth
+              error={!!formErrors.phone}
+              helperText={formErrors.phone || 'Opcional - Entre 7 y 15 dígitos'}
+              inputProps={{ maxLength: 15 }}
             />
             {!editing && (
               <TextField
                 label="Contraseña"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value.slice(0, 50);
+                  setFormData({ ...formData, password: value });
+                  if (formErrors.password) setFormErrors({ ...formErrors, password: '' });
+                }}
                 fullWidth
                 required
+                error={!!formErrors.password}
+                helperText={formErrors.password || 'Mínimo 6 caracteres'}
+                inputProps={{ maxLength: 50 }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             )}
             <TextField
               select
               label="Rol"
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, role: e.target.value });
+                if (formErrors.role) setFormErrors({ ...formErrors, role: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.role}
+              helperText={formErrors.role}
             >
               <MenuItem value="owner">Propietario</MenuItem>
               <MenuItem value="tenant">Arrendatario</MenuItem>
@@ -385,16 +508,47 @@ const Users = () => {
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
           <Button
             onClick={handleCreate}
             variant="contained"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
           >
             {editing ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, name: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Usuario"
+        message={`¿Estás seguro de que quieres eliminar al usuario "${deleteDialog.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
+
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

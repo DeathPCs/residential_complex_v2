@@ -15,6 +15,7 @@ import {
   Alert,
   Chip,
   IconButton,
+  Snackbar,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -27,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import api, { updateEvent, deleteEvent, updateMaintenanceStatus } from '../../services/api';
 import Loading from '../../components/common/Loading';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { AuthContext } from '../../context/AuthContext';
 
 const Maintenance = () => {
@@ -37,6 +39,9 @@ const Maintenance = () => {
   const [editing, setEditing] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, title: '' });
+  const [formErrors, setFormErrors] = useState({});
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -71,11 +76,52 @@ const Maintenance = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.title.trim()) {
+      errors.title = 'El título es requerido';
+    } else if (formData.title.trim().length < 3) {
+      errors.title = 'El título debe tener al menos 3 caracteres';
+    } else if (formData.title.trim().length > 200) {
+      errors.title = 'El título no puede exceder 200 caracteres';
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = 'La descripción es requerida';
+    } else if (formData.description.trim().length < 10) {
+      errors.description = 'La descripción debe tener al menos 10 caracteres';
+    } else if (formData.description.trim().length > 1000) {
+      errors.description = 'La descripción no puede exceder 1000 caracteres';
+    }
+    
+    if (!formData.area) {
+      errors.area = 'El área es requerida';
+    }
+    
+    if (!formData.scheduledDate) {
+      errors.scheduledDate = 'La fecha programada es requerida';
+    }
+    
+    if (!formData.priority) {
+      errors.priority = 'La prioridad es requerida';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       await api.post('/maintenance', formData);
+      setSuccess('Mantenimiento creado exitosamente');
       setOpen(false);
       setFormData({ title: '', description: '', area: '', scheduledDate: '', completedDate: '', priority: ''});
+      setFormErrors({});
       fetchMaintenances();
     } catch (error) {
       console.error('Error creating maintenance:', error);
@@ -84,11 +130,17 @@ const Maintenance = () => {
   };
 
   const handleUpdate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       await updateEvent(editing.id, formData);
+      setSuccess('Mantenimiento actualizado exitosamente');
       setOpen(false);
       setEditing(null);
       setFormData({ title: '', description: '', area: '', scheduledDate: '', completedDate: '', priority: '' });
+      setFormErrors({});
       fetchMaintenances();
     } catch (error) {
       console.error('Error updating maintenance:', error);
@@ -96,15 +148,20 @@ const Maintenance = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este mantenimiento?')) {
-      try {
-        await deleteEvent(id);
-        fetchMaintenances();
-      } catch (error) {
-        console.error('Error deleting maintenance:', error);
-        setError(error.userMessage || 'Error al eliminar mantenimiento');
-      }
+  const handleDeleteClick = (id, title) => {
+    setDeleteDialog({ open: true, id, title });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteEvent(deleteDialog.id);
+      setSuccess('Mantenimiento eliminado exitosamente');
+      setDeleteDialog({ open: false, id: null, title: '' });
+      fetchMaintenances();
+    } catch (error) {
+      console.error('Error deleting maintenance:', error);
+      setError(error.userMessage || 'Error al eliminar mantenimiento');
+      setDeleteDialog({ open: false, id: null, title: '' });
     }
   };
 
@@ -118,6 +175,7 @@ const Maintenance = () => {
       completedDate: maintenance.completedDate ? maintenance.completedDate.split('T')[0] : '',
       priority: maintenance.priority || '',
     });
+    setFormErrors({});
     setOpen(true);
   };
 
@@ -131,6 +189,7 @@ const Maintenance = () => {
 
     try {
       await updateMaintenanceStatus(id, nextStatus);
+      setSuccess('Estado del mantenimiento actualizado exitosamente');
     } catch (error) {
       // Revert the change on error
       setMaintenances(prev => prev.map(m => m.id === id ? { ...m, status: currentStatus } : m));
@@ -249,7 +308,7 @@ const Maintenance = () => {
           </IconButton>
           <IconButton
             color="error"
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => handleDeleteClick(params.row.id, params.row.title)}
             title="Eliminar"
           >
             <Delete />
@@ -321,6 +380,7 @@ const Maintenance = () => {
               onClick={() => {
                 setEditing(null);
                 setFormData({ title: '', description: '', area: '', scheduledDate: '', completedDate: '', priority: '' });
+                setFormErrors({});
                 setOpen(true);
               }}
               sx={{
@@ -346,8 +406,22 @@ const Maintenance = () => {
         </Box>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center', color: '#2586b8' }}>
+      <Dialog 
+        open={open} 
+        onClose={() => {
+          setOpen(false);
+          setFormErrors({});
+        }} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '8px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
           {editing ? 'Editar Mantenimiento' : 'Registrar Mantenimiento'}
         </DialogTitle>
         <DialogContent>
@@ -355,48 +429,85 @@ const Maintenance = () => {
             <TextField
               label="Título"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 200);
+                setFormData({ ...formData, title: value });
+                if (formErrors.title) setFormErrors({ ...formErrors, title: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.title}
+              helperText={formErrors.title || 'Mínimo 3 caracteres, máximo 200'}
+              inputProps={{ maxLength: 200 }}
             />
             <TextField
               label="Descripción"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 1000);
+                setFormData({ ...formData, description: value });
+                if (formErrors.description) setFormErrors({ ...formErrors, description: '' });
+              }}
               multiline
               rows={3}
               fullWidth
+              required
+              error={!!formErrors.description}
+              helperText={formErrors.description || 'Mínimo 10 caracteres, máximo 1000'}
+              inputProps={{ maxLength: 1000 }}
             />
             <TextField
               label="Área"
               value={formData.area}
-              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 100);
+                setFormData({ ...formData, area: value });
+                if (formErrors.area) setFormErrors({ ...formErrors, area: '' });
+              }}
               placeholder="Piscina, gym, elevador, áreas comunes, jardines..."
               fullWidth
               required
+              error={!!formErrors.area}
+              helperText={formErrors.area || 'Máximo 100 caracteres'}
+              inputProps={{ maxLength: 100 }}
             />
             <TextField
               label="Fecha programada"
               type="date"
               value={formData.scheduledDate}
-              onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, scheduledDate: e.target.value });
+                if (formErrors.scheduledDate) setFormErrors({ ...formErrors, scheduledDate: '' });
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
+              required
+              error={!!formErrors.scheduledDate}
+              helperText={formErrors.scheduledDate}
             />
             <TextField
               label="Fecha completada"
               type="date"
               value={formData.completedDate}
-              onChange={(e) => setFormData({ ...formData, completedDate: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, completedDate: e.target.value });
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
+              helperText="Opcional"
             />
             <TextField
               select
               label="Prioridad"
               value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, priority: e.target.value });
+                if (formErrors.priority) setFormErrors({ ...formErrors, priority: '' });
+              }}
               fullWidth
+              required
+              error={!!formErrors.priority}
+              helperText={formErrors.priority}
             >
               <MenuItem value="low">Baja</MenuItem>
               <MenuItem value="medium">Media</MenuItem>
@@ -404,16 +515,47 @@ const Maintenance = () => {
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
           <Button
             onClick={editing ? handleUpdate : handleCreate}
             variant="contained"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
           >
             {editing ? 'Actualizar' : 'Guardar'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, title: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Mantenimiento"
+        message={`¿Estás seguro de que quieres eliminar el mantenimiento "${deleteDialog.title}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
+
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

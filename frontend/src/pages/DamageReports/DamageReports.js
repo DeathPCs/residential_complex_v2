@@ -15,6 +15,7 @@ import {
   InputAdornment,
   IconButton,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -27,6 +28,7 @@ import {
 import api, { updateDamageReportStatus } from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import Loading from '../../components/common/Loading';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const DamageReports = () => {
   const { user } = useContext(AuthContext);
@@ -37,8 +39,10 @@ const DamageReports = () => {
   const [editing, setEditing] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, title: '' });
+  const [formErrors, setFormErrors] = useState({});
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -82,16 +86,54 @@ const DamageReports = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.title.trim()) {
+      errors.title = 'El título es requerido';
+    } else if (formData.title.trim().length < 3) {
+      errors.title = 'El título debe tener al menos 3 caracteres';
+    } else if (formData.title.trim().length > 200) {
+      errors.title = 'El título no puede exceder 200 caracteres';
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = 'La descripción es requerida';
+    } else if (formData.description.trim().length < 10) {
+      errors.description = 'La descripción debe tener al menos 10 caracteres';
+    } else if (formData.description.trim().length > 1000) {
+      errors.description = 'La descripción no puede exceder 1000 caracteres';
+    }
+    
+    if (!formData.priority) {
+      errors.priority = 'La prioridad es requerida';
+    }
+    
+    if (!formData.apartmentId) {
+      errors.apartmentId = 'El apartamento es requerido';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       if (editing) {
         await api.put(`/damage-reports/${editing.id}`, formData);
+        setSuccess('Reporte de daño actualizado exitosamente');
       } else {
         await api.post('/damage-reports', formData);
+        setSuccess('Reporte de daño creado exitosamente');
       }
       setOpen(false);
       setEditing(null);
       setFormData({ title: '', description: '', priority: '', apartmentId: '', reportedBy: '' });
+      setFormErrors({});
       fetchReports();
     } catch (error) {
       console.error('Error creating/updating damage report:', error);
@@ -108,18 +150,24 @@ const DamageReports = () => {
       apartmentId: report.apartmentId,
       reportedBy: report.reportedBy,
     });
+    setFormErrors({});
     setOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este reporte?')) {
-      try {
-        await api.delete(`/damage-reports/${id}`);
-        fetchReports();
-      } catch (error) {
-        console.error('Error deleting damage report:', error);
-        setError(error.userMessage || 'Error al eliminar reporte de daño');
-      }
+  const handleDeleteClick = (id, title) => {
+    setDeleteDialog({ open: true, id, title });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await api.delete(`/damage-reports/${deleteDialog.id}`);
+      setSuccess('Reporte de daño eliminado exitosamente');
+      setDeleteDialog({ open: false, id: null, title: '' });
+      fetchReports();
+    } catch (error) {
+      console.error('Error deleting damage report:', error);
+      setError(error.userMessage || 'Error al eliminar reporte de daño');
+      setDeleteDialog({ open: false, id: null, title: '' });
     }
   };
 
@@ -136,6 +184,7 @@ const DamageReports = () => {
 
       try {
         await updateDamageReportStatus(id, nextStatus);
+        setSuccess('Estado del reporte actualizado exitosamente');
       } catch (error) {
         // Revert the change on error
         setReports(prev => prev.map(r => r.id === id ? { ...r, status: currentStatus } : r));
@@ -284,7 +333,7 @@ const DamageReports = () => {
           </IconButton>
           <IconButton
             size="small"
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => handleDeleteClick(params.row.id, params.row.title)}
             color="error"
           >
             <Delete />
@@ -342,7 +391,12 @@ const DamageReports = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setEditing(null);
+              setFormData({ title: '', description: '', priority: '', apartmentId: '', reportedBy: '' });
+              setFormErrors({});
+              setOpen(true);
+            }}
           >
             Nuevo Reporte
           </Button>
@@ -360,8 +414,22 @@ const DamageReports = () => {
         </Box>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog 
+        open={open} 
+        onClose={() => {
+          setOpen(false);
+          setFormErrors({});
+        }} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '8px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
           {editing ? 'Editar Reporte de Daño' : 'Nuevo Reporte de Daño'}
         </DialogTitle>
         <DialogContent>
@@ -370,8 +438,14 @@ const DamageReports = () => {
               select
               label="Apartamento"
               value={formData.apartmentId}
-              onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, apartmentId: e.target.value });
+                if (formErrors.apartmentId) setFormErrors({ ...formErrors, apartmentId: '' });
+              }}
               fullWidth
+              required
+              error={!!formErrors.apartmentId}
+              helperText={formErrors.apartmentId}
             >
               {apartments.map((apartment) => (
                 <MenuItem key={apartment.id} value={apartment.id}>
@@ -382,23 +456,45 @@ const DamageReports = () => {
             <TextField
               label="Título"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 200);
+                setFormData({ ...formData, title: value });
+                if (formErrors.title) setFormErrors({ ...formErrors, title: '' });
+              }}
               fullWidth
+              required
+              error={!!formErrors.title}
+              helperText={formErrors.title || 'Mínimo 3 caracteres, máximo 200'}
+              inputProps={{ maxLength: 200 }}
             />
             <TextField
               label="Descripción"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 1000);
+                setFormData({ ...formData, description: value });
+                if (formErrors.description) setFormErrors({ ...formErrors, description: '' });
+              }}
               multiline
               rows={3}
               fullWidth
+              required
+              error={!!formErrors.description}
+              helperText={formErrors.description || 'Mínimo 10 caracteres, máximo 1000'}
+              inputProps={{ maxLength: 1000 }}
             />
             <TextField
               select
               label="Prioridad"
               value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, priority: e.target.value });
+                if (formErrors.priority) setFormErrors({ ...formErrors, priority: '' });
+              }}
               fullWidth
+              required
+              error={!!formErrors.priority}
+              helperText={formErrors.priority}
             >
               <MenuItem value="low">Baja</MenuItem>
               <MenuItem value="medium">Media</MenuItem>
@@ -407,15 +503,47 @@ const DamageReports = () => {
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleCreate} variant="contained">
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleCreate} 
+            variant="contained"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
             {editing ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogActions>
       </Dialog>
 
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, title: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Reporte"
+        message={`¿Estás seguro de que quieres eliminar el reporte "${deleteDialog.title}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
 
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

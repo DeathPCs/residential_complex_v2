@@ -19,6 +19,7 @@ import {
   IconButton,
   Alert,
   Fab,
+  Snackbar,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -30,6 +31,7 @@ import {
 } from '@mui/icons-material';
 import { getApartments, createApartment, updateApartment, deleteApartment, getUsers } from '../../services/api';
 import Loading from '../../components/common/Loading';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { AuthContext } from '../../context/AuthContext';
 
 const Apartments = () => {
@@ -41,6 +43,9 @@ const Apartments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, number: '' });
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     number: '',
     tower: '',
@@ -85,11 +90,49 @@ const Apartments = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.number.trim()) {
+      errors.number = 'El número es requerido';
+    } else if (formData.number.trim().length > 20) {
+      errors.number = 'El número no puede exceder 20 caracteres';
+    }
+    
+    if (!formData.tower.trim()) {
+      errors.tower = 'La torre es requerida';
+    } else if (formData.tower.trim().length > 50) {
+      errors.tower = 'La torre no puede exceder 50 caracteres';
+    }
+    
+    if (!formData.floor || formData.floor === '') {
+      errors.floor = 'El piso es requerido';
+    } else {
+      const floorNum = parseInt(formData.floor);
+      if (isNaN(floorNum) || floorNum < 1 || floorNum > 200) {
+        errors.floor = 'El piso debe ser un número entre 1 y 200';
+      }
+    }
+    
+    if (formData.type && formData.type.length > 50) {
+      errors.type = 'El tipo no puede exceder 50 caracteres';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       await createApartment(formData);
+      setSuccess('Apartamento creado exitosamente');
       setOpen(false);
       setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
+      setFormErrors({});
       fetchApartments();
     } catch (error) {
       console.error('Error creating apartment:', error);
@@ -98,11 +141,17 @@ const Apartments = () => {
   };
 
   const handleUpdate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       await updateApartment(editing.id, formData);
+      setSuccess('Apartamento actualizado exitosamente');
       setOpen(false);
       setEditing(null);
       setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
+      setFormErrors({});
       fetchApartments();
     } catch (error) {
       console.error('Error updating apartment:', error);
@@ -110,15 +159,20 @@ const Apartments = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este apartamento?')) {
-      try {
-        await deleteApartment(id);
-        fetchApartments();
-      } catch (error) {
-        console.error('Error deleting apartment:', error);
-        setError(error.userMessage || 'Error al eliminar apartamento');
-      }
+  const handleDeleteClick = (id, number) => {
+    setDeleteDialog({ open: true, id, number });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteApartment(deleteDialog.id);
+      setSuccess('Apartamento eliminado exitosamente');
+      setDeleteDialog({ open: false, id: null, number: '' });
+      fetchApartments();
+    } catch (error) {
+      console.error('Error deleting apartment:', error);
+      setError(error.userMessage || 'Error al eliminar apartamento');
+      setDeleteDialog({ open: false, id: null, number: '' });
     }
   };
 
@@ -133,6 +187,7 @@ const Apartments = () => {
       assignedUserId: apartment.assignedUserId || '',
       assignedRole: apartment.assignedRole || '',
     });
+    setFormErrors({});
     setOpen(true);
   };
 
@@ -244,7 +299,7 @@ const Apartments = () => {
           </IconButton>
           <IconButton
             color="error"
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => handleDeleteClick(params.row.id, params.row.number)}
             title="Eliminar"
           >
             <Delete />
@@ -322,6 +377,7 @@ const Apartments = () => {
               onClick={() => {
                 setEditing(null);
                 setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
+                setFormErrors({});
                 setOpen(true);
               }}
             >
@@ -342,8 +398,18 @@ const Apartments = () => {
         </Box>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog open={open} onClose={() => {
+        setOpen(false);
+        setFormErrors({});
+      }} maxWidth="sm" fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '8px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
           {editing ? 'Editar Apartamento' : 'Nuevo Apartamento'}
         </DialogTitle>
         <DialogContent>
@@ -351,24 +417,45 @@ const Apartments = () => {
             <TextField
               label="Número"
               value={formData.number}
-              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 20);
+                setFormData({ ...formData, number: value });
+                if (formErrors.number) setFormErrors({ ...formErrors, number: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.number}
+              helperText={formErrors.number}
+              inputProps={{ maxLength: 20 }}
             />
             <TextField
               label="Torre"
               value={formData.tower}
-              onChange={(e) => setFormData({ ...formData, tower: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 50);
+                setFormData({ ...formData, tower: value });
+                if (formErrors.tower) setFormErrors({ ...formErrors, tower: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.tower}
+              helperText={formErrors.tower}
+              inputProps={{ maxLength: 50 }}
             />
             <TextField
               label="Piso"
               type="number"
               value={formData.floor}
-              onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, floor: value });
+                if (formErrors.floor) setFormErrors({ ...formErrors, floor: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.floor}
+              helperText={formErrors.floor}
+              inputProps={{ min: 1, max: 200 }}
             />
             <TextField
               select
@@ -468,13 +555,47 @@ const Apartments = () => {
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={editing ? handleUpdate : handleCreate} variant="contained">
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={editing ? handleUpdate : handleCreate} 
+            variant="contained"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
             {editing ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, number: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Apartamento"
+        message={`¿Estás seguro de que quieres eliminar el apartamento "${deleteDialog.number}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
+
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Paper, InputAdornment, IconButton, Grid, Card, CardContent, } from '@mui/material';
+import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Paper, InputAdornment, IconButton, Grid, Card, CardContent, Alert, Snackbar, } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { Add, Search, CheckCircle, Delete, Hotel, Person, Event, AccessTime, Edit,
 } from '@mui/icons-material';
 import { getAirbnbGuests, getActiveAirbnbGuests, createAirbnbGuest, updateAirbnbGuest, checkinAirbnbGuest, checkoutAirbnbGuest, deleteAirbnbGuest, getApartments, } from '../../services/api';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const Airbnb = () => {
   const { user } = useContext(AuthContext);
@@ -17,6 +18,9 @@ const Airbnb = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, name: '' });
+  const [formErrors, setFormErrors] = useState({});
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     apartmentId: '',
@@ -70,12 +74,63 @@ const Airbnb = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.apartmentId) {
+      errors.apartmentId = 'El apartamento es requerido';
+    }
+    
+    if (!formData.guestName.trim()) {
+      errors.guestName = 'El nombre del huésped es requerido';
+    } else if (formData.guestName.trim().length < 2) {
+      errors.guestName = 'El nombre debe tener al menos 2 caracteres';
+    } else if (formData.guestName.trim().length > 100) {
+      errors.guestName = 'El nombre no puede exceder 100 caracteres';
+    }
+    
+    if (!formData.guestCedula.trim()) {
+      errors.guestCedula = 'La cédula del huésped es requerida';
+    } else if (!/^\d{7,10}$/.test(formData.guestCedula.trim())) {
+      errors.guestCedula = 'La cédula debe tener entre 7 y 10 dígitos';
+    }
+    
+    if (!formData.numberOfGuests || formData.numberOfGuests < 1) {
+      errors.numberOfGuests = 'El número de huéspedes debe ser al menos 1';
+    } else if (formData.numberOfGuests > 20) {
+      errors.numberOfGuests = 'El número de huéspedes no puede exceder 20';
+    }
+    
+    if (!formData.checkInDate) {
+      errors.checkInDate = 'La fecha de entrada es requerida';
+    }
+    
+    if (!formData.checkOutDate) {
+      errors.checkOutDate = 'La fecha de salida es requerida';
+    } else if (formData.checkInDate && formData.checkOutDate) {
+      const checkIn = new Date(formData.checkInDate);
+      const checkOut = new Date(formData.checkOutDate);
+      if (checkOut <= checkIn) {
+        errors.checkOutDate = 'La fecha de salida debe ser posterior a la fecha de entrada';
+      }
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreate = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       if (editing) {
         await updateAirbnbGuest(editing.id, formData);
+        setSuccess('Huésped actualizado exitosamente');
       } else {
         await createAirbnbGuest(formData);
+        setSuccess('Huésped registrado exitosamente');
       }
       setOpen(false);
       setEditing(null);
@@ -87,10 +142,12 @@ const Airbnb = () => {
         checkInDate: '',
         checkOutDate: '',
       });
+      setFormErrors({});
       fetchGuests();
       fetchActiveGuests();
     } catch (error) {
       console.error('Error creating/updating guest:', error);
+      setError(error.userMessage || 'Error al crear/actualizar huésped');
     }
   };
 
@@ -104,6 +161,7 @@ const Airbnb = () => {
       checkInDate: guest.checkInDate.split('T')[0], // Format for date input
       checkOutDate: guest.checkOutDate.split('T')[0],
     });
+    setFormErrors({});
     setOpen(true);
   };
 
@@ -111,9 +169,11 @@ const Airbnb = () => {
     try {
       const updatedGuest = await checkinAirbnbGuest(id);
       setGuests(prev => prev.map(g => g.id === id ? updatedGuest : g));
+      setSuccess('Check-in realizado exitosamente');
       fetchActiveGuests();
     } catch (error) {
       console.error('Error checking in guest:', error);
+      setError(error.userMessage || 'Error al realizar check-in');
     }
   };
 
@@ -121,21 +181,29 @@ const Airbnb = () => {
     try {
       const updatedGuest = await checkoutAirbnbGuest(id);
       setGuests(prev => prev.map(g => g.id === id ? updatedGuest : g));
+      setSuccess('Check-out realizado exitosamente');
       fetchActiveGuests();
     } catch (error) {
       console.error('Error checking out guest:', error);
+      setError(error.userMessage || 'Error al realizar check-out');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este huésped?')) {
-      try {
-        await deleteAirbnbGuest(id);
-        fetchGuests();
-        fetchActiveGuests();
-      } catch (error) {
-        console.error('Error deleting guest:', error);
-      }
+  const handleDeleteClick = (id, name) => {
+    setDeleteDialog({ open: true, id, name });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteAirbnbGuest(deleteDialog.id);
+      setSuccess('Huésped eliminado exitosamente');
+      setDeleteDialog({ open: false, id: null, name: '' });
+      fetchGuests();
+      fetchActiveGuests();
+    } catch (error) {
+      console.error('Error deleting guest:', error);
+      setError(error.userMessage || 'Error al eliminar huésped');
+      setDeleteDialog({ open: false, id: null, name: '' });
     }
   };
 
@@ -253,7 +321,7 @@ const Airbnb = () => {
           )}
           <IconButton
             color="error"
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => handleDeleteClick(params.row.id, params.row.guestName)}
             title="Eliminar"
           >
             <Delete />
@@ -361,7 +429,19 @@ const Airbnb = () => {
             <Button
               variant="contained"
               startIcon={<Add />}
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                setEditing(null);
+                setFormData({
+                  apartmentId: '',
+                  guestName: '',
+                  guestCedula: '',
+                  numberOfGuests: 1,
+                  checkInDate: '',
+                  checkOutDate: '',
+                });
+                setFormErrors({});
+                setOpen(true);
+              }}
             >
               Registrar Huésped
             </Button>
@@ -380,17 +460,38 @@ const Airbnb = () => {
         </Box>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editing ? 'Editar Huésped Airbnb' : 'Registrar Nuevo Huésped Airbnb'}</DialogTitle>
+      <Dialog 
+        open={open} 
+        onClose={() => {
+          setOpen(false);
+          setFormErrors({});
+        }} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '8px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
+          {editing ? 'Editar Huésped Airbnb' : 'Registrar Nuevo Huésped Airbnb'}
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               select
               label="Apartamento"
               value={formData.apartmentId}
-              onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, apartmentId: e.target.value });
+                if (formErrors.apartmentId) setFormErrors({ ...formErrors, apartmentId: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.apartmentId}
+              helperText={formErrors.apartmentId}
             >
               <MenuItem value="">Ninguno</MenuItem>
               {apartments.map((apartment) => (
@@ -402,53 +503,124 @@ const Airbnb = () => {
             <TextField
               label="Nombre del Huésped"
               value={formData.guestName}
-              onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 100);
+                setFormData({ ...formData, guestName: value });
+                if (formErrors.guestName) setFormErrors({ ...formErrors, guestName: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.guestName}
+              helperText={formErrors.guestName}
+              inputProps={{ maxLength: 100 }}
             />
             <TextField
               label="Cédula del Huésped"
               value={formData.guestCedula}
-              onChange={(e) => setFormData({ ...formData, guestCedula: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setFormData({ ...formData, guestCedula: value });
+                if (formErrors.guestCedula) setFormErrors({ ...formErrors, guestCedula: '' });
+              }}
               fullWidth
               required
+              error={!!formErrors.guestCedula}
+              helperText={formErrors.guestCedula || 'Entre 7 y 10 dígitos'}
+              inputProps={{ maxLength: 10 }}
             />
             <TextField
               label="Número de Huéspedes"
               type="number"
               value={formData.numberOfGuests}
-              onChange={(e) => setFormData({ ...formData, numberOfGuests: parseInt(e.target.value) })}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1;
+                setFormData({ ...formData, numberOfGuests: value });
+                if (formErrors.numberOfGuests) setFormErrors({ ...formErrors, numberOfGuests: '' });
+              }}
               fullWidth
-              inputProps={{ min: 1 }}
               required
+              error={!!formErrors.numberOfGuests}
+              helperText={formErrors.numberOfGuests || 'Entre 1 y 20 huéspedes'}
+              inputProps={{ min: 1, max: 20 }}
             />
             <TextField
               label="Fecha de entrada"
               type="date"
               value={formData.checkInDate}
-              onChange={(e) => setFormData({ ...formData, checkInDate: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, checkInDate: e.target.value });
+                if (formErrors.checkInDate) setFormErrors({ ...formErrors, checkInDate: '' });
+                if (formErrors.checkOutDate && formData.checkOutDate) {
+                  const checkOut = new Date(formData.checkOutDate);
+                  const checkIn = new Date(e.target.value);
+                  if (checkOut > checkIn) {
+                    setFormErrors({ ...formErrors, checkInDate: '', checkOutDate: '' });
+                  }
+                }
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
               required
+              error={!!formErrors.checkInDate}
+              helperText={formErrors.checkInDate}
             />
             <TextField
               label="Fecha de salida"
               type="date"
               value={formData.checkOutDate}
-              onChange={(e) => setFormData({ ...formData, checkOutDate: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, checkOutDate: e.target.value });
+                if (formErrors.checkOutDate) setFormErrors({ ...formErrors, checkOutDate: '' });
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
               required
+              error={!!formErrors.checkOutDate}
+              helperText={formErrors.checkOutDate || 'Debe ser posterior a la fecha de entrada'}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleCreate} variant="contained">
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleCreate} 
+            variant="contained"
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
             {editing ? 'Actualizar' : 'Registrar'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, name: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Huésped"
+        message={`¿Estás seguro de que quieres eliminar al huésped "${deleteDialog.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
+
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
