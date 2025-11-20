@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Paper, InputAdornment, IconButton, Grid, Card, CardContent, } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
@@ -16,6 +16,8 @@ const Airbnb = () => {
   const [editing, setEditing] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [error, setError] = useState(null);
+  const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     apartmentId: '',
     guestName: '',
@@ -32,12 +34,18 @@ const Airbnb = () => {
   }, []);
 
   const fetchGuests = async () => {
+    // Prevenir múltiples llamadas concurrentes
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     try {
       const guestsData = await getAirbnbGuests();
       setGuests((guestsData || []).filter(Boolean));
     } catch (error) {
       console.error('Error fetching guests:', error);
       setGuests([]);
+    } finally {
+      fetchInProgress.current = false;
     }
   };
 

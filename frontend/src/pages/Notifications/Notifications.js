@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -29,15 +29,14 @@ const NotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const fetchInProgress = useRef(false);
+  const intervalRef = useRef(null);
 
-  useEffect(() => {
-    fetchNotifications();
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
+    // Prevenir múltiples llamadas concurrentes
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     try {
       const response = await api.get('/notifications');
       setNotifications(response.data.data || []);
@@ -45,8 +44,25 @@ const NotificationsPage = () => {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    // Set up polling for real-time updates
+    intervalRef.current = setInterval(() => {
+      if (!fetchInProgress.current) {
+        fetchNotifications();
+      }
+    }, 30000); // Poll every 30 seconds
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchNotifications]);
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta notificación?')) {

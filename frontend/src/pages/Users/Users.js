@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   Container,
   Typography,
@@ -47,6 +47,7 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
+  const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -61,6 +62,10 @@ const Users = () => {
   }, []);
 
   const fetchUsers = async () => {
+    // Prevenir múltiples llamadas concurrentes
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     try {
       setLoading(true);
       setError(null);
@@ -72,6 +77,7 @@ const Users = () => {
       setUsers([]);
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
   };
 

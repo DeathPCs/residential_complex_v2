@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   Container,
   Typography,
@@ -37,6 +37,7 @@ const Maintenance = () => {
   const [editing, setEditing] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -51,6 +52,10 @@ const Maintenance = () => {
   }, []);
 
   const fetchMaintenances = async () => {
+    // Prevenir múltiples llamadas concurrentes
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     try {
       setLoading(true);
       setError(null);
@@ -62,6 +67,7 @@ const Maintenance = () => {
       setMaintenances([]);
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
   };
 

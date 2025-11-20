@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   Container,
   Grid,
@@ -35,8 +35,13 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const fetchInProgress = useRef(false);
 
   const fetchStats = async () => {
+    // Prevenir múltiples llamadas concurrentes
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     try {
       setLoading(true);
       setError(null);
@@ -105,12 +110,15 @@ const Dashboard = () => {
       setError(error.userMessage || 'Error al cargar las estadísticas');
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
   };
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
   // Define role-based access for cards
   const getAllowedCards = () => {

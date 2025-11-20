@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   Container,
   Typography,
@@ -39,6 +39,7 @@ const Payments = () => {
   const [users, setUsers] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [error, setError] = useState(null);
+  const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     userId: '',
     apartmentId: '',
@@ -75,6 +76,10 @@ const Payments = () => {
   };
 
   const fetchPayments = async () => {
+    // Prevenir múltiples llamadas concurrentes
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     try {
       setLoading(true);
       setError(null);
@@ -86,6 +91,7 @@ const Payments = () => {
       setPayments([]);
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
   };
 
@@ -103,8 +109,7 @@ const Payments = () => {
     } catch (error) {
       console.error('Error creating/updating payment:', error);
       setError(error.userMessage || 'Error al crear/actualizar pago');
-      // Always fetch payments to ensure UI is up to date even on error
-      fetchPayments();
+      // No hacer fetchPayments aquí para evitar llamadas duplicadas
     }
   };
 
