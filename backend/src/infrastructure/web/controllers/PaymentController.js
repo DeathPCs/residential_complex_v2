@@ -86,7 +86,36 @@ class PaymentController {
 
     async getPayments(req, res, next) {
         try {
+            const userRole = req.user.role;
+            const userId = req.user.id;
+            
+            let where = {};
+            
+            // Filtrar según el rol del usuario
+            if (userRole === 'admin') {
+                // Admin ve todos los pagos
+                // No se aplica filtro
+            } else if (userRole === 'owner') {
+                // Owner ve pagos de apartamentos donde es el assignedUserId con assignedRole = 'owner'
+                // Primero obtener los apartamentos del owner
+                const apartments = await prismaService.getApartments({
+                    where: { assignedUserId: userId, assignedRole: 'owner' }
+                });
+                const apartmentIds = apartments.map(apt => apt.id);
+                
+                if (apartmentIds.length > 0) {
+                    where = { apartmentId: { in: apartmentIds } };
+                } else {
+                    // Si no tiene apartamentos, retornar array vacío
+                    where = { id: { in: [] } };
+                }
+            } else if (userRole === 'tenant' || userRole === 'airbnb_guest') {
+                // Tenant y Airbnb Guest ven solo sus propios pagos
+                where = { userId: userId };
+            }
+            
             const payments = await prismaService.getPayments({
+                where: where,
                 include: { user: { include: { apartments: true, apartmentsAssigned: true } }, apartment: true },
                 orderBy: { createdAt: 'desc' }
             });

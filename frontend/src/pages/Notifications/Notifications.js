@@ -121,8 +121,10 @@ const NotificationsPage = () => {
             <MenuItem value="maintenance">Mantenimiento</MenuItem>
             <MenuItem value="payment">Pago</MenuItem>
             <MenuItem value="airbnb_registration">Registro Airbnb</MenuItem>
-            <MenuItem value="airbnb_checkin">Check-in Airbnb</MenuItem>
+            <MenuItem value="airbnb_checkin">Ingreso Airbnb</MenuItem>
             <MenuItem value="damage_report">Reporte de Daño</MenuItem>
+            <MenuItem value="apartment_assignment">Asignación de Apartamento</MenuItem>
+            <MenuItem value="apartment_update">Actualización de Apartamento</MenuItem>
           </TextField>
         </Box>
 
@@ -156,6 +158,8 @@ const NotificationsPage = () => {
                             notification.type === 'airbnb_registration' ? 'Registro Airbnb' :
                             notification.type === 'airbnb_checkin' ? 'Ingreso Airbnb' :
                             notification.type === 'damage_report' ? 'Reporte de Daño' :
+                            notification.type === 'apartment_assignment' ? 'Asignación de Apartamento' :
+                            notification.type === 'apartment_update' ? 'Actualización de Apartamento' :
                             notification.type === 'emergency' ? 'Emergencia' :
                             'General'
                           }
@@ -165,6 +169,8 @@ const NotificationsPage = () => {
                             notification.type === 'maintenance' ? 'warning' :
                             notification.type === 'payment' ? 'info' :
                             notification.type === 'damage_report' ? 'error' :
+                            notification.type === 'apartment_assignment' ? 'success' :
+                            notification.type === 'apartment_update' ? 'info' :
                             'default'
                           }
                         />

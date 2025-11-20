@@ -56,7 +56,7 @@ function App() {
                 <Route
                   path="/apartments"
                   element={
-                    <RoleBasedRoute allowedRoles={['admin', 'owner']}>
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'tenant', 'airbnb_guest']}>
                       <Layout>
                         <Apartments />
                       </Layout>
@@ -86,7 +86,7 @@ function App() {
                 <Route
                   path="/payments"
                   element={
-                    <RoleBasedRoute allowedRoles={['admin']}>
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'tenant', 'airbnb_guest']}>
                       <Layout>
                         <Payments />
                       </Layout>
@@ -116,7 +116,7 @@ function App() {
                 <Route
                   path="/airbnb"
                   element={
-                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'security']}>
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'airbnb_guest', 'security']}>
                       <Layout>
                         <Airbnb />
                       </Layout>

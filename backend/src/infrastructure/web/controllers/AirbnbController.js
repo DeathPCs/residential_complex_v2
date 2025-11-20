@@ -146,14 +146,29 @@ class AirbnbController {
                     createdAt: 'desc'
                 }
             };
-            if (req.user.role === 'owner') {
+            
+            const userRole = req.user.role;
+            const userId = req.user.id;
+            
+            // Filtrar según el rol del usuario
+            if (userRole === 'admin') {
+                // Admin ve todos los huéspedes
+                // No se aplica filtro
+            } else if (userRole === 'owner') {
+                // Owner ve huéspedes de apartamentos donde es el assignedUserId con assignedRole = 'owner'
                 options.where = {
                     apartment: {
-                        assignedUserId: req.user.id,
+                        assignedUserId: userId,
                         assignedRole: 'owner'
                     }
                 };
+            } else if (userRole === 'airbnb_guest') {
+                // Airbnb Guest ve solo sus propios registros (por cédula)
+                options.where = {
+                    guestCedula: req.user.cedula
+                };
             }
+            
             const guests = await prismaService.getAirbnbGuests(options);
             res.json({
                 success: true,

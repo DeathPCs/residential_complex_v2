@@ -120,7 +120,7 @@ const Dashboard = () => {
         value: stats.apartments,
         icon: <Apartment sx={{ fontSize: 50, color: 'primary.main' }} />,
         color: 'primary.main',
-        allowedRoles: ['admin', 'owner'],
+        allowedRoles: ['admin', 'owner', 'tenant', 'airbnb_guest'],
       },
       {
         title: 'Reportes de Daños',
@@ -141,7 +141,7 @@ const Dashboard = () => {
         value: stats.payments,
         icon: <Payment sx={{ fontSize: 50, color: 'success.main' }} />,
         color: 'success.main',
-        allowedRoles: ['admin'],
+        allowedRoles: ['admin', 'owner', 'tenant', 'airbnb_guest'],
       },
       {
         title: 'Notificaciones',

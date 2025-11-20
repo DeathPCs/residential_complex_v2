@@ -7,10 +7,10 @@ const prismaService = require('../../database/prismaService');
 
 const airbnbController = new AirbnbController();
 
-router.post('/guests', auth, roleAuth(['admin', 'owner']), airbnbController.registerGuest.bind(airbnbController));
+router.post('/guests', auth, roleAuth(['admin']), airbnbController.registerGuest.bind(airbnbController));
 router.put('/guests/:id/checkin', auth, roleAuth(['admin', 'security']), airbnbController.checkInGuest.bind(airbnbController));
 router.put('/guests/:id/checkout', auth, roleAuth(['admin', 'security']), airbnbController.checkOutGuest.bind(airbnbController));
-router.put('/guests/:id', auth, roleAuth(['admin', 'owner']), async (req, res, next) => {
+router.put('/guests/:id', auth, roleAuth(['admin']), async (req, res, next) => {
     try {
         const { id } = req.params;
         const { apartmentId, guestName, guestCedula, numberOfGuests, checkInDate, checkOutDate } = req.body;
@@ -30,7 +30,7 @@ router.put('/guests/:id', auth, roleAuth(['admin', 'owner']), async (req, res, n
     }
 });
 router.get('/guests/active', auth, roleAuth(['admin', 'security']), airbnbController.getActiveGuests.bind(airbnbController));
-router.get('/guests', auth, roleAuth(['admin', 'owner']), airbnbController.getAllGuests.bind(airbnbController));
-router.delete('/guests/:id', auth, roleAuth(['admin', 'owner']), airbnbController.deleteGuest.bind(airbnbController));
+router.get('/guests', auth, roleAuth(['admin', 'owner', 'airbnb_guest']), airbnbController.getAllGuests.bind(airbnbController));
+router.delete('/guests/:id', auth, roleAuth(['admin']), airbnbController.deleteGuest.bind(airbnbController));
 
 module.exports = router;

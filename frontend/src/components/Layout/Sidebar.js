@@ -33,11 +33,11 @@ const Sidebar = ({ open, onClose, variant = 'temporary' }) => {
   const getMenuItems = (role) => {
     const allItems = [
       { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', roles: ['admin', 'owner', 'tenant', 'airbnb_guest'] },
-      { text: 'Apartamentos', icon: <Apartment />, path: '/apartments', roles: ['admin', 'owner'] },
-      { text: 'Airbnb', icon: <Hotel />, path: '/airbnb', roles: ['admin', 'owner', 'security'] },
+      { text: 'Apartamentos', icon: <Apartment />, path: '/apartments', roles: ['admin', 'owner', 'tenant', 'airbnb_guest'] },
+      { text: 'Airbnb', icon: <Hotel />, path: '/airbnb', roles: ['admin', 'owner', 'airbnb_guest'] },
       { text: 'Reportes de Daños', icon: <Report />, path: '/damage-reports', roles: ['admin', 'owner', 'tenant', 'airbnb_guest'] },
       { text: 'Mantenimientos', icon: <Build />, path: '/maintenance', roles: ['admin'] },
-      { text: 'Pagos', icon: <Payment />, path: '/payments', roles: ['admin'] },
+      { text: 'Pagos', icon: <Payment />, path: '/payments', roles: ['admin', 'owner', 'tenant', 'airbnb_guest'] },
       { text: 'Usuarios', icon: <People />, path: '/users', roles: ['admin'] },
       { text: 'Notificaciones', icon: <Notifications />, path: '/notifications', roles: ['admin', 'owner', 'tenant', 'airbnb_guest'] },
     ];
