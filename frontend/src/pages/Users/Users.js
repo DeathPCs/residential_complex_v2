@@ -55,6 +55,7 @@ const Users = () => {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, name: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -120,10 +121,35 @@ const Users = () => {
     
     if (!editing && !formData.password.trim()) {
       errors.password = 'La contraseña es requerida';
-    } else if (!editing && formData.password.length < 6) {
-      errors.password = 'La contraseña debe tener al menos 6 caracteres';
-    } else if (!editing && formData.password.length > 50) {
-      errors.password = 'La contraseña no puede exceder 50 caracteres';
+    } else if (!editing && formData.password.trim()) {
+      const password = formData.password;
+      const passwordErrors = [];
+      
+      if (password.length < 8) {
+        passwordErrors.push('mínimo 8 caracteres');
+      } else if (password.length > 50) {
+        passwordErrors.push('máximo 50 caracteres');
+      }
+      
+      if (!/[A-Z]/.test(password)) {
+        passwordErrors.push('una letra mayúscula');
+      }
+      
+      if (!/[a-z]/.test(password)) {
+        passwordErrors.push('una letra minúscula');
+      }
+      
+      if (!/[0-9]/.test(password)) {
+        passwordErrors.push('un número');
+      }
+      
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        passwordErrors.push('un carácter especial (!@#$%^&*...)');
+      }
+      
+      if (passwordErrors.length > 0) {
+        errors.password = `La contraseña debe contener: ${passwordErrors.join(', ')}`;
+      }
     }
     
     if (!formData.role) {
@@ -131,6 +157,14 @@ const Users = () => {
     }
     
     setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstKey = Object.keys(errors)[0];
+      setFormAlert(errors[firstKey]);
+    } else {
+      setFormAlert('');
+    }
+
     return Object.keys(errors).length === 0;
   };
 
@@ -151,6 +185,7 @@ const Users = () => {
       setEditing(null);
       setFormData({ name: '', email: '', cedula: '', phone: '', password: '', role: '' });
       setFormErrors({});
+      setFormAlert('');
       setShowPassword(false);
       fetchUsers();
     } catch (error) {
@@ -170,6 +205,7 @@ const Users = () => {
       role: user.role,
     });
     setFormErrors({});
+    setFormAlert('');
     setShowPassword(false);
     setOpen(true);
   };
@@ -372,6 +408,7 @@ const Users = () => {
                 setEditing(null);
                 setFormData({ name: '', email: '', cedula: '', phone: '', password: '', role: '' });
                 setFormErrors({});
+                setFormAlert('');
                 setShowPassword(false);
                 setOpen(true);
               }}
@@ -396,11 +433,25 @@ const Users = () => {
         </Box>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setFormErrors({});
+          setFormAlert('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ textAlign: 'center', color: '#004272' }}>
           {editing ? 'Editar Usuario' : 'Nuevo Usuario'}
         </DialogTitle>
         <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               label="Nombre"
@@ -471,7 +522,7 @@ const Users = () => {
                 fullWidth
                 required
                 error={!!formErrors.password}
-                helperText={formErrors.password || 'Mínimo 6 caracteres'}
+                helperText={formErrors.password || 'Mínimo 8 caracteres, incluir mayúscula, minúscula, número y carácter especial'}
                 inputProps={{ maxLength: 50 }}
                 InputProps={{
                   endAdornment: (
@@ -513,6 +564,7 @@ const Users = () => {
             onClick={() => {
               setOpen(false);
               setFormErrors({});
+              setFormAlert('');
             }}
             variant="outlined"
             sx={{ borderRadius: '8px', textTransform: 'none' }}

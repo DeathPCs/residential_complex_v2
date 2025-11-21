@@ -28,20 +28,143 @@ const Register = () => {
     role: '',
   });
   const [error, setError] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  const validateForm = () => {
+    const errors = {};
+    let alertMessage = '';
+    
+    if (!formData.name.trim()) {
+      errors.name = 'El nombre es requerido';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'El nombre debe tener al menos 2 caracteres';
+    } else if (formData.name.trim().length > 100) {
+      errors.name = 'El nombre no puede exceder 100 caracteres';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'El email es requerido';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'El email no es válido';
+    } else if (formData.email.length > 255) {
+      errors.email = 'El email no puede exceder 255 caracteres';
+    }
+    
+    if (!formData.password.trim()) {
+      errors.password = 'La contraseña es requerida';
+    } else {
+      const password = formData.password;
+      const passwordErrors = [];
+      
+      if (password.length < 8) {
+        passwordErrors.push('mínimo 8 caracteres');
+      } else if (password.length > 50) {
+        passwordErrors.push('máximo 50 caracteres');
+      }
+      
+      if (!/[A-Z]/.test(password)) {
+        passwordErrors.push('una letra mayúscula');
+      }
+      
+      if (!/[a-z]/.test(password)) {
+        passwordErrors.push('una letra minúscula');
+      }
+      
+      if (!/[0-9]/.test(password)) {
+        passwordErrors.push('un número');
+      }
+      
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        passwordErrors.push('un carácter especial (!@#$%^&*...)');
+      }
+      
+      if (passwordErrors.length > 0) {
+        errors.password = `La contraseña debe contener: ${passwordErrors.join(', ')}`;
+      }
+    }
+    
+    if (!formData.cedula.trim()) {
+      errors.cedula = 'La cédula es requerida';
+    } else if (!/^\d{7,10}$/.test(formData.cedula.trim())) {
+      errors.cedula = 'La cédula debe tener entre 7 y 10 dígitos';
+    }
+    
+    if (formData.phone && formData.phone.trim() && !/^\d{7,15}$/.test(formData.phone.trim())) {
+      errors.phone = 'El teléfono debe tener entre 7 y 15 dígitos';
+    }
+    
+    if (!formData.role) {
+      errors.role = 'El rol es requerido';
+    }
+    
+    setFormErrors(errors);
+    
+    // Crear mensaje de alerta con todos los campos faltantes
+    const missingFields = [];
+    if (errors.name) missingFields.push('Nombre');
+    if (errors.email) missingFields.push('Email');
+    if (errors.password) missingFields.push('Contraseña');
+    if (errors.cedula) missingFields.push('Cédula');
+    if (errors.phone) missingFields.push('Teléfono');
+    if (errors.role) missingFields.push('Rol');
+    
+    if (missingFields.length > 0) {
+      alertMessage = `Por favor, completa los siguientes campos: ${missingFields.join(', ')}.`;
+    } else if (Object.keys(errors).length > 0) {
+      const errorMessages = Object.values(errors).filter(msg => !msg.includes('requerido'));
+      if (errorMessages.length > 0) {
+        alertMessage = `Corrige los siguientes errores: ${errorMessages.join(', ')}.`;
+      }
+    }
+    
+    setFormAlert(alertMessage);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let processedValue = value;
+    
+    // Aplicar límites y validaciones según el campo
+    if (name === 'cedula') {
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
+    } else if (name === 'phone') {
+      processedValue = value.replace(/\D/g, '').slice(0, 15);
+    } else if (name === 'name') {
+      processedValue = value.slice(0, 100);
+    } else if (name === 'email') {
+      processedValue = value.slice(0, 255);
+    } else if (name === 'password') {
+      processedValue = value.slice(0, 50);
+    }
+    
+    setFormData({ ...formData, [name]: processedValue });
+    
+    // Limpiar errores del campo cuando el usuario empiece a escribir
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: '' });
+    }
+    if (formAlert) {
+      setFormAlert('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     setError('');
+    setFormAlert('');
 
     try {
       await register(formData);
@@ -90,6 +213,12 @@ const Register = () => {
             </Alert>
           )}
 
+          {formAlert && (
+            <Alert severity="warning" sx={{ width: '100%', mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
+
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
             <TextField
               margin="normal"
@@ -102,8 +231,9 @@ const Register = () => {
               autoFocus
               value={formData.name}
               onChange={handleChange}
-              error={!!error && !formData.name}
-              helperText={error && !formData.name ? 'El nombre es requerido' : ''}
+              error={!!formErrors.name}
+              helperText={formErrors.name}
+              inputProps={{ maxLength: 100 }}
             />
             <TextField
               margin="normal"
@@ -112,11 +242,13 @@ const Register = () => {
               id="email"
               label="Correo Electrónico"
               name="email"
+              type="email"
               autoComplete="email"
               value={formData.email}
               onChange={handleChange}
-              error={!!error && !formData.email}
-              helperText={error && !formData.email ? 'El email es requerido' : ''}
+              error={!!formErrors.email}
+              helperText={formErrors.email}
+              inputProps={{ maxLength: 255 }}
             />
             <TextField
               margin="normal"
@@ -129,8 +261,9 @@ const Register = () => {
               autoComplete="new-password"
               value={formData.password}
               onChange={handleChange}
-              error={!!error && !formData.password}
-              helperText={error && !formData.password ? 'La contraseña es requerida' : ''}
+              error={!!formErrors.password}
+              helperText={formErrors.password || 'Mínimo 8 caracteres, incluir mayúscula, minúscula, número y carácter especial'}
+              inputProps={{ maxLength: 50 }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -154,8 +287,9 @@ const Register = () => {
               name="cedula"
               value={formData.cedula}
               onChange={handleChange}
-              error={!!error && !formData.cedula}
-              helperText={error && !formData.cedula ? 'La cédula es requerida' : ''}
+              error={!!formErrors.cedula}
+              helperText={formErrors.cedula || 'Entre 7 y 10 dígitos'}
+              inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
             />
             <TextField
               margin="normal"
@@ -165,6 +299,9 @@ const Register = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
+              error={!!formErrors.phone}
+              helperText={formErrors.phone || 'Opcional - Entre 7 y 15 dígitos'}
+              inputProps={{ maxLength: 15, inputMode: 'numeric', pattern: '[0-9]*' }}
             />
             <TextField
               margin="normal"
@@ -175,6 +312,9 @@ const Register = () => {
               name="role"
               value={formData.role}
               onChange={handleChange}
+              required
+              error={!!formErrors.role}
+              helperText={formErrors.role}
             >
               <MenuItem value="owner">Propietario</MenuItem>
               <MenuItem value="tenant">Arrendatario</MenuItem>

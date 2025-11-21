@@ -44,6 +44,7 @@ const Payments = () => {
   const [success, setSuccess] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, concept: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     userId: '',
@@ -139,6 +140,14 @@ const Payments = () => {
     }
     
     setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstKey = Object.keys(errors)[0];
+      setFormAlert(errors[firstKey]);
+    } else {
+      setFormAlert('');
+    }
+
     return Object.keys(errors).length === 0;
   };
 
@@ -159,6 +168,7 @@ const Payments = () => {
       setEditing(null);
       setFormData({ userId: '', apartmentId: '', amount: '', concept: 'Pago de administración', dueDate: '', paidDate: '' });
       setFormErrors({});
+      setFormAlert('');
       fetchPayments();
     } catch (error) {
       console.error('Error creating/updating payment:', error);
@@ -177,6 +187,7 @@ const Payments = () => {
       paidDate: payment.paidDate ? payment.paidDate.split('T')[0] : '',
     });
     setFormErrors({});
+    setFormAlert('');
     setOpen(true);
   };
 
@@ -388,6 +399,7 @@ const Payments = () => {
                 setEditing(null);
                 setFormData({ userId: '', apartmentId: '', amount: '', concept: 'Pago de administración', dueDate: '', paidDate: '' });
                 setFormErrors({});
+                setFormAlert('');
                 setOpen(true);
               }}
             >
@@ -413,6 +425,7 @@ const Payments = () => {
         onClose={() => {
           setOpen(false);
           setFormErrors({});
+          setFormAlert('');
         }} 
         maxWidth="sm" 
         fullWidth
@@ -427,6 +440,11 @@ const Payments = () => {
           {editing ? 'Editar Pago' : 'Registrar pago de administración'}
         </DialogTitle>
         <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               select
@@ -528,6 +546,7 @@ const Payments = () => {
             onClick={() => {
               setOpen(false);
               setFormErrors({});
+              setFormAlert('');
             }}
             variant="outlined"
             sx={{ borderRadius: '8px', textTransform: 'none' }}

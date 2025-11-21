@@ -43,6 +43,7 @@ const DamageReports = () => {
   const [success, setSuccess] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, title: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -114,6 +115,14 @@ const DamageReports = () => {
     }
     
     setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstKey = Object.keys(errors)[0];
+      setFormAlert(errors[firstKey]);
+    } else {
+      setFormAlert('');
+    }
+
     return Object.keys(errors).length === 0;
   };
 
@@ -134,6 +143,8 @@ const DamageReports = () => {
       setEditing(null);
       setFormData({ title: '', description: '', priority: '', apartmentId: '', reportedBy: '' });
       setFormErrors({});
+      setFormAlert('');
+      setFormAlert('');
       fetchReports();
     } catch (error) {
       console.error('Error creating/updating damage report:', error);
@@ -151,6 +162,7 @@ const DamageReports = () => {
       reportedBy: report.reportedBy,
     });
     setFormErrors({});
+    setFormAlert('');
     setOpen(true);
   };
 
@@ -395,6 +407,7 @@ const DamageReports = () => {
               setEditing(null);
               setFormData({ title: '', description: '', priority: '', apartmentId: '', reportedBy: '' });
               setFormErrors({});
+              setFormAlert('');
               setOpen(true);
             }}
           >
@@ -419,6 +432,7 @@ const DamageReports = () => {
         onClose={() => {
           setOpen(false);
           setFormErrors({});
+          setFormAlert('');
         }} 
         maxWidth="sm" 
         fullWidth
@@ -433,6 +447,11 @@ const DamageReports = () => {
           {editing ? 'Editar Reporte de Daño' : 'Nuevo Reporte de Daño'}
         </DialogTitle>
         <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               select
@@ -508,6 +527,7 @@ const DamageReports = () => {
             onClick={() => {
               setOpen(false);
               setFormErrors({});
+              setFormAlert('');
             }}
             variant="outlined"
             sx={{ borderRadius: '8px', textTransform: 'none' }}

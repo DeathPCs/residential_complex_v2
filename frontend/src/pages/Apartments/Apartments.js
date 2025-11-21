@@ -46,6 +46,7 @@ const Apartments = () => {
   const [success, setSuccess] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, number: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const [formData, setFormData] = useState({
     number: '',
     tower: '',
@@ -119,6 +120,14 @@ const Apartments = () => {
     }
     
     setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstKey = Object.keys(errors)[0];
+      setFormAlert(errors[firstKey]);
+    } else {
+      setFormAlert('');
+    }
+
     return Object.keys(errors).length === 0;
   };
 
@@ -133,6 +142,7 @@ const Apartments = () => {
       setOpen(false);
       setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
       setFormErrors({});
+      setFormAlert('');
       fetchApartments();
     } catch (error) {
       console.error('Error creating apartment:', error);
@@ -152,6 +162,7 @@ const Apartments = () => {
       setEditing(null);
       setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
       setFormErrors({});
+      setFormAlert('');
       fetchApartments();
     } catch (error) {
       console.error('Error updating apartment:', error);
@@ -188,6 +199,7 @@ const Apartments = () => {
       assignedRole: apartment.assignedRole || '',
     });
     setFormErrors({});
+    setFormAlert('');
     setOpen(true);
   };
 
@@ -378,6 +390,7 @@ const Apartments = () => {
                 setEditing(null);
                 setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
                 setFormErrors({});
+                setFormAlert('');
                 setOpen(true);
               }}
             >
@@ -401,6 +414,7 @@ const Apartments = () => {
       <Dialog open={open} onClose={() => {
         setOpen(false);
         setFormErrors({});
+        setFormAlert('');
       }} maxWidth="sm" fullWidth
         PaperProps={{
           sx: {
@@ -413,6 +427,11 @@ const Apartments = () => {
           {editing ? 'Editar Apartamento' : 'Nuevo Apartamento'}
         </DialogTitle>
         <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               label="Número"
@@ -444,10 +463,10 @@ const Apartments = () => {
             />
             <TextField
               label="Piso"
-              type="number"
+              type="text"
               value={formData.floor}
               onChange={(e) => {
-                const value = e.target.value;
+                const value = e.target.value.replace(/\D/g, '').slice(0, 3);
                 setFormData({ ...formData, floor: value });
                 if (formErrors.floor) setFormErrors({ ...formErrors, floor: '' });
               }}
@@ -455,7 +474,7 @@ const Apartments = () => {
               required
               error={!!formErrors.floor}
               helperText={formErrors.floor}
-              inputProps={{ min: 1, max: 200 }}
+              inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 3 }}
             />
             <TextField
               select
@@ -560,6 +579,7 @@ const Apartments = () => {
             onClick={() => {
               setOpen(false);
               setFormErrors({});
+              setFormAlert('');
             }}
             variant="outlined"
             sx={{ borderRadius: '8px', textTransform: 'none' }}

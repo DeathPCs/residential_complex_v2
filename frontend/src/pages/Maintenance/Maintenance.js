@@ -42,6 +42,7 @@ const Maintenance = () => {
   const [success, setSuccess] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, title: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -108,6 +109,14 @@ const Maintenance = () => {
     }
     
     setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstKey = Object.keys(errors)[0];
+      setFormAlert(errors[firstKey]);
+    } else {
+      setFormAlert('');
+    }
+
     return Object.keys(errors).length === 0;
   };
 
@@ -122,6 +131,7 @@ const Maintenance = () => {
       setOpen(false);
       setFormData({ title: '', description: '', area: '', scheduledDate: '', completedDate: '', priority: ''});
       setFormErrors({});
+      setFormAlert('');
       fetchMaintenances();
     } catch (error) {
       console.error('Error creating maintenance:', error);
@@ -141,6 +151,7 @@ const Maintenance = () => {
       setEditing(null);
       setFormData({ title: '', description: '', area: '', scheduledDate: '', completedDate: '', priority: '' });
       setFormErrors({});
+      setFormAlert('');
       fetchMaintenances();
     } catch (error) {
       console.error('Error updating maintenance:', error);
@@ -176,6 +187,7 @@ const Maintenance = () => {
       priority: maintenance.priority || '',
     });
     setFormErrors({});
+    setFormAlert('');
     setOpen(true);
   };
 
@@ -380,7 +392,8 @@ const Maintenance = () => {
               onClick={() => {
                 setEditing(null);
                 setFormData({ title: '', description: '', area: '', scheduledDate: '', completedDate: '', priority: '' });
-                setFormErrors({});
+              setFormErrors({});
+              setFormAlert('');
                 setOpen(true);
               }}
               sx={{
@@ -411,6 +424,7 @@ const Maintenance = () => {
         onClose={() => {
           setOpen(false);
           setFormErrors({});
+          setFormAlert('');
         }} 
         maxWidth="sm" 
         fullWidth
@@ -425,6 +439,11 @@ const Maintenance = () => {
           {editing ? 'Editar Mantenimiento' : 'Registrar Mantenimiento'}
         </DialogTitle>
         <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               label="Título"
@@ -520,6 +539,7 @@ const Maintenance = () => {
             onClick={() => {
               setOpen(false);
               setFormErrors({});
+              setFormAlert('');
             }}
             variant="outlined"
             sx={{ borderRadius: '8px', textTransform: 'none' }}

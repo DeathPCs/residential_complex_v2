@@ -21,6 +21,7 @@ const Airbnb = () => {
   const [success, setSuccess] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, name: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState('');
   const fetchInProgress = useRef(false);
   const [formData, setFormData] = useState({
     apartmentId: '',
@@ -116,6 +117,14 @@ const Airbnb = () => {
     }
     
     setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstKey = Object.keys(errors)[0];
+      setFormAlert(errors[firstKey]);
+    } else {
+      setFormAlert('');
+    }
+
     return Object.keys(errors).length === 0;
   };
 
@@ -143,6 +152,7 @@ const Airbnb = () => {
         checkOutDate: '',
       });
       setFormErrors({});
+      setFormAlert('');
       fetchGuests();
       fetchActiveGuests();
     } catch (error) {
@@ -162,6 +172,7 @@ const Airbnb = () => {
       checkOutDate: guest.checkOutDate.split('T')[0],
     });
     setFormErrors({});
+    setFormAlert('');
     setOpen(true);
   };
 
@@ -440,6 +451,7 @@ const Airbnb = () => {
                   checkOutDate: '',
                 });
                 setFormErrors({});
+                setFormAlert('');
                 setOpen(true);
               }}
             >
@@ -465,6 +477,7 @@ const Airbnb = () => {
         onClose={() => {
           setOpen(false);
           setFormErrors({});
+          setFormAlert('');
         }} 
         maxWidth="sm" 
         fullWidth
@@ -479,6 +492,11 @@ const Airbnb = () => {
           {editing ? 'Editar Huésped Airbnb' : 'Registrar Nuevo Huésped Airbnb'}
         </DialogTitle>
         <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               select
@@ -585,6 +603,7 @@ const Airbnb = () => {
             onClick={() => {
               setOpen(false);
               setFormErrors({});
+              setFormAlert('');
             }}
             variant="outlined"
             sx={{ borderRadius: '8px', textTransform: 'none' }}
