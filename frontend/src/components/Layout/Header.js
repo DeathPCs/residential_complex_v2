@@ -62,7 +62,7 @@ const Header = ({ onMenuClick }) => {
             display: { xs: 'none', sm: 'block' }, // Hide on very small screens
           }}
         >
-          NexoHome
+          ¡Bienvenido a nuestro sistema de gestión de conjuntos residenciales!
         </Typography>
         <Typography
           variant="h6"

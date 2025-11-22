@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, CssBaseline, useTheme, useMediaQuery } from '@mui/material';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import Chatbot from '../common/Chatbot';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,6 +45,7 @@ const Layout = ({ children }) => {
       >
         {children}
       </Box>
+      <Chatbot />
     </Box>
   );
 };
