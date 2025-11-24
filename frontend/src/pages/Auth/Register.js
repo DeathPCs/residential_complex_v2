@@ -262,7 +262,7 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               error={!!formErrors.password}
-              helperText={formErrors.password || 'Mínimo 8 caracteres, incluir mayúscula, minúscula, número y carácter especial'}
+              helperText={formErrors.password}
               inputProps={{ maxLength: 50 }}
               InputProps={{
                 endAdornment: (
@@ -288,11 +288,12 @@ const Register = () => {
               value={formData.cedula}
               onChange={handleChange}
               error={!!formErrors.cedula}
-              helperText={formErrors.cedula || 'Entre 7 y 10 dígitos'}
+              helperText={formErrors.cedula}
               inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }}
             />
             <TextField
               margin="normal"
+              required
               fullWidth
               id="phone"
               label="Teléfono"
@@ -300,7 +301,7 @@ const Register = () => {
               value={formData.phone}
               onChange={handleChange}
               error={!!formErrors.phone}
-              helperText={formErrors.phone || 'Opcional - Entre 7 y 15 dígitos'}
+              helperText={formErrors.phone}
               inputProps={{ maxLength: 15, inputMode: 'numeric', pattern: '[0-9]*' }}
             />
             <TextField
@@ -333,6 +334,15 @@ const Register = () => {
               <Link href="/login" variant="body2">
                 ¿Ya tienes cuenta? Inicia sesión
               </Link>
+            </Box>
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => window.location.href = '/'}
+              >
+                Volver al inicio
+              </Button>
             </Box>
           </Box>
         </Paper>

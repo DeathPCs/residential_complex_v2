@@ -18,6 +18,7 @@ import Payments from './pages/Payments/Payments';
 import Notifications from './pages/Notifications/Notifications';
 import Users from './pages/Users/Users';
 import Airbnb from './pages/Airbnb/Airbnb';
+import LandingPage from './pages/Landing/LandingPage';
 import Loading from './components/common/Loading';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import RoleBasedRoute from './components/common/RoleBasedRoute';
@@ -123,7 +124,89 @@ function App() {
                     </RoleBasedRoute>
                   }
                 />
-                <Route path="/" element={<Navigate to="/dashboard" />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <PrivateRoute>
+                      <Layout>
+                        <Dashboard />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/apartments"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'tenant', 'airbnb_guest']}>
+                      <Layout>
+                        <Apartments />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/maintenance"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin']}>
+                      <Layout>
+                        <Maintenance />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/damage-reports"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'tenant', 'airbnb_guest']}>
+                      <Layout>
+                        <DamageReports />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/payments"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'tenant', 'airbnb_guest']}>
+                      <Layout>
+                        <Payments />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'tenant', 'airbnb_guest']}>
+                      <Layout>
+                        <Notifications />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin']}>
+                      <Layout>
+                        <Users />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/airbnb"
+                  element={
+                    <RoleBasedRoute allowedRoles={['admin', 'owner', 'airbnb_guest', 'security']}>
+                      <Layout>
+                        <Airbnb />
+                      </Layout>
+                    </RoleBasedRoute>
+                  }
+                />
               </Routes>
             </Router>
           </AuthProvider>

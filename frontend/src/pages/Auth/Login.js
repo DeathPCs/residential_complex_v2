@@ -205,6 +205,15 @@ const Login = () => {
                 ¿No tienes cuenta? Regístrate
               </Link>
             </Box>
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => window.location.href = '/'}
+              >
+                Volver al inicio
+              </Button>
+            </Box>
           </Box>
         </Paper>
 
