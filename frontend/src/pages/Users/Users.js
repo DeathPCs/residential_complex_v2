@@ -330,7 +330,7 @@ const Users = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Residentes del conjunto
         </Typography>
         <Typography variant="body1" color="text.secondary">

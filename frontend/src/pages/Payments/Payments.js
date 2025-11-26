@@ -234,7 +234,7 @@ const Payments = () => {
     switch (status) {
       case 'paid': return 'success';
       case 'pending': return 'warning';
-      case 'late': return 'error';
+      case 'overdue': return 'error';
       default: return 'default';
     }
   };
@@ -243,7 +243,7 @@ const Payments = () => {
     switch (status) {
       case 'paid': return 'Pagado';
       case 'pending': return 'Pendiente';
-      case 'late': return 'Mora';
+      case 'overdue': return 'Mora';
       default: return status;
     }
   };
@@ -349,7 +349,7 @@ const Payments = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Pagos de administración
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -367,6 +367,15 @@ const Payments = () => {
               size="small"
               startIcon={<Refresh />}
               onClick={fetchPayments}
+              sx={{
+                fontWeight: 600,
+                borderRadius: '12px',
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: '#003354',
+                  color: 'white',
+                },
+              }}
             >
               Reintentar
             </Button>
@@ -436,9 +445,9 @@ const Payments = () => {
           },
         }}
       >
-        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
-          {editing ? 'Editar Pago' : 'Registrar pago de administración'}
-        </DialogTitle>
+      <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600, letterSpacing: '0.03em' }}>
+        {editing ? 'Editar Pago' : 'Registrar pago de administración'}
+      </DialogTitle>
         <DialogContent>
           {formAlert && (
             <Alert severity="warning" sx={{ mb: 2 }}>
@@ -541,26 +550,26 @@ const Payments = () => {
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={() => {
-              setOpen(false);
-              setFormErrors({});
-              setFormAlert('');
-            }}
-            variant="outlined"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleCreate}
-            variant="contained"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
-          >
-            {editing ? 'Actualizar' : 'Registrar'}
-          </Button>
-        </DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button 
+          onClick={() => {
+            setOpen(false);
+            setFormErrors({});
+            setFormAlert('');
+          }}
+          variant="outlined"
+          sx={{ borderRadius: '12px', textTransform: 'none' }}
+        >
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleCreate}
+          variant="contained"
+          sx={{ borderRadius: '12px', textTransform: 'none' }}
+        >
+          {editing ? 'Actualizar' : 'Registrar'}
+        </Button>
+      </DialogActions>
       </Dialog>
 
       <ConfirmDialog
@@ -578,8 +587,14 @@ const Payments = () => {
         autoHideDuration={3000}
         onClose={() => setSuccess(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: '12px',
+            boxShadow: 6,
+          },
+        }}
       >
-        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%', borderRadius: '12px' }}>
           {success}
         </Alert>
       </Snackbar>

@@ -9,6 +9,7 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  Box
 } from '@mui/material';
 import {
   Dashboard,
@@ -55,16 +56,31 @@ const Sidebar = ({ open, onClose, variant = 'temporary' }) => {
   };
 
   const drawerContent = (
-    <List sx={{ width: 280, pt: 2, height: '100%', overflow: 'hidden' }}>
+    <List>
       <ListItem>
-        <ListItemText
-          primary="NexoHome"
-          primaryTypographyProps={{
-            variant: 'h6',
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
             fontWeight: 'bold',
+            fontSize: '2.5rem',
             color: 'primary.main',
           }}
-        />
+        >
+          Nexo
+          <Box
+            component="img"
+            src="/logo.png"
+            alt="logo"
+            sx={{
+              width: 32,
+              height: 32,
+              mx: 0.5,
+              transform: 'translateY(-2px)'
+            }}
+          />
+          Home
+        </Box>
       </ListItem>
       <Divider sx={{ my: 1 }} />
       {menuItems.map((item) => {

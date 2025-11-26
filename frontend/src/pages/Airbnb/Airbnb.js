@@ -345,7 +345,7 @@ const Airbnb = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Gestión Airbnb
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -409,8 +409,8 @@ const Airbnb = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+      <Paper sx={{ p: 4, mb: 4, borderRadius: '16px', boxShadow: 6 }}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
           <TextField
             placeholder="Buscar por nombre, cédula o apartamento"
             value={searchTerm}
@@ -484,11 +484,12 @@ const Airbnb = () => {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            padding: '8px',
+            padding: '16px',
+            boxShadow: 6,
           },
         }}
       >
-        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600, letterSpacing: '0.02em' }}>
           {editing ? 'Editar Huésped Airbnb' : 'Registrar Nuevo Huésped Airbnb'}
         </DialogTitle>
         <DialogContent>
@@ -606,14 +607,21 @@ const Airbnb = () => {
               setFormAlert('');
             }}
             variant="outlined"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
+            sx={{ borderRadius: '12px', textTransform: 'none' }}
           >
             Cancelar
           </Button>
           <Button 
             onClick={handleCreate} 
             variant="contained"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              transition: 'background-color 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#003354',
+              },
+            }}
           >
             {editing ? 'Actualizar' : 'Registrar'}
           </Button>
@@ -635,8 +643,9 @@ const Airbnb = () => {
         autoHideDuration={3000}
         onClose={() => setSuccess(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{ borderRadius: '12px', boxShadow: 6 }}
       >
-        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%', borderRadius: '12px', boxShadow: 6 }}>
           {success}
         </Alert>
       </Snackbar>

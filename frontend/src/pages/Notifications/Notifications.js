@@ -64,17 +64,6 @@ const NotificationsPage = () => {
     };
   }, [fetchNotifications]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta notificación?')) {
-      try {
-        await api.delete(`/notifications/${id}`);
-        fetchNotifications();
-      } catch (error) {
-        console.error('Error deleting notification:', error);
-      }
-    }
-  };
-
   const handleMarkAsRead = async (id) => {
     try {
       await markNotificationAsRead(id);
@@ -95,7 +84,7 @@ const NotificationsPage = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Notificaciones
           {unreadCount > 0 && (
             <Chip

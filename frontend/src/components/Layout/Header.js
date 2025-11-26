@@ -39,8 +39,6 @@ const Header = ({ onMenuClick }) => {
       sx={{
         backgroundColor: 'primary.main',
         zIndex: theme.zIndex.drawer + 1,
-        width: { md: 'calc(100% - 280px)' }, // Subtract sidebar width on desktop
-        ml: { md: '280px' }, // Sidebar width
       }}
     >
       <Toolbar>

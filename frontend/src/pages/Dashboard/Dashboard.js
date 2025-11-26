@@ -179,12 +179,12 @@ const Dashboard = () => {
   }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+    <Container maxWidth="lg" sx={{ pb: 6 }}>
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Dashboard
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" color="text.secondary" sx={{ letterSpacing: '0.01em' }}>
           Bienvenido al sistema de gestión de conjuntos residenciales - NexoHome
         </Typography>
       </Box>
@@ -192,13 +192,14 @@ const Dashboard = () => {
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 3 }}
+          sx={{ mb: 4 }}
           action={
             <Button
               color="inherit"
               size="small"
               startIcon={<Refresh />}
               onClick={fetchStats}
+              sx={{ fontWeight: 600, borderRadius: 2, px: 2 }}
             >
               Reintentar
             </Button>
@@ -208,18 +209,32 @@ const Dashboard = () => {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={4}>
         {cards.map((card, index) => (
-          <Grid item xs={12} sm={6} md={4} lg={4} xl={2} key={index}>
-            <Card sx={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+          <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={index}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 3,
+                boxShadow: 3,
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                cursor: 'default',
+                '&:hover': {
+                  transform: 'translateY(-6px)',
+                  boxShadow: 6,
+                },
+              }}
+            >
               <CardContent sx={{ flexGrow: 1, width: '100%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   {card.icon}
-                  <Typography variant="h6" sx={{ ml: 2 }}>
+                  <Typography variant="h6" sx={{ ml: 2, fontWeight: 700, letterSpacing: '0.02em' }}>
                     {card.title}
                   </Typography>
                 </Box>
-                <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h3" component="div" sx={{ fontWeight: 700 }}>
                   {card.value}
                 </Typography>
               </CardContent>

@@ -358,7 +358,7 @@ const DamageReports = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Reportes de Daños
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -443,7 +443,7 @@ const DamageReports = () => {
           },
         }}
       >
-        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600, letterSpacing: '0.03em' }}>
           {editing ? 'Editar Reporte de Daño' : 'Nuevo Reporte de Daño'}
         </DialogTitle>
         <DialogContent>
@@ -530,14 +530,14 @@ const DamageReports = () => {
               setFormAlert('');
             }}
             variant="outlined"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
+            sx={{ borderRadius: '12px', textTransform: 'none' }}
           >
             Cancelar
           </Button>
           <Button 
             onClick={handleCreate} 
             variant="contained"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
+            sx={{ borderRadius: '12px', textTransform: 'none' }}
           >
             {editing ? 'Actualizar' : 'Crear'}
           </Button>
@@ -559,8 +559,14 @@ const DamageReports = () => {
         autoHideDuration={3000}
         onClose={() => setSuccess(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: '12px',
+            boxShadow: 6,
+          },
+        }}
       >
-        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%', borderRadius: '12px' }}>
           {success}
         </Alert>
       </Snackbar>

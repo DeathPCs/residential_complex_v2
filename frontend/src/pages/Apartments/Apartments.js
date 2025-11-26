@@ -327,11 +327,11 @@ const Apartments = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, letterSpacing: '0.03em' }}>
           Apartamentos
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" color="text.secondary" sx={{ letterSpacing: '0.01em' }}>
           Gestión completa de apartamentos del conjunto residencial
         </Typography>
       </Box>
@@ -339,13 +339,23 @@ const Apartments = () => {
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 3 }}
+          sx={{ mb: 4 }}
           action={
             <Button
               color="inherit"
               size="small"
               startIcon={<Refresh />}
               onClick={fetchApartments}
+              sx={{
+                fontWeight: 600,
+                borderRadius: '12px',
+                textTransform: 'none',
+                px: 2,
+                '&:hover': {
+                  backgroundColor: '#003354',
+                  color: 'white',
+                },
+              }}
             >
               Reintentar
             </Button>
@@ -355,8 +365,8 @@ const Apartments = () => {
         </Alert>
       )}
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+      <Paper sx={{ p: 4, mb: 4, borderRadius: '16px', boxShadow: 6 }}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
           <TextField
             placeholder="Buscar por número, torre o propietario"
             value={searchTerm}
@@ -368,14 +378,14 @@ const Apartments = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 300 }}
+            sx={{ minWidth: 320 }}
           />
           <TextField
             select
             label="Filtrar por estado"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 180 }}
           >
             <MenuItem value="">Todos</MenuItem>
             <MenuItem value="owner_occupied">En propiedad</MenuItem>
@@ -392,6 +402,14 @@ const Apartments = () => {
                 setFormErrors({});
                 setFormAlert('');
                 setOpen(true);
+              }}
+              sx={{
+                borderRadius: '12px',
+                textTransform: 'none',
+                transition: 'background-color 0.3s ease',
+                '&:hover': {
+                  backgroundColor: '#003354',
+                },
               }}
             >
               Nuevo Apartamento
@@ -410,191 +428,24 @@ const Apartments = () => {
           />
         </Box>
       </Paper>
+      
 
-      <Dialog open={open} onClose={() => {
-        setOpen(false);
-        setFormErrors({});
-        setFormAlert('');
-      }} maxWidth="sm" fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            padding: '8px',
+      <Snackbar
+        open={!!success}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: '12px',
+            boxShadow: 6,
           },
         }}
       >
-        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600 }}>
-          {editing ? 'Editar Apartamento' : 'Nuevo Apartamento'}
-        </DialogTitle>
-        <DialogContent>
-          {formAlert && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              {formAlert}
-            </Alert>
-          )}
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Número"
-              value={formData.number}
-              onChange={(e) => {
-                const value = e.target.value.slice(0, 20);
-                setFormData({ ...formData, number: value });
-                if (formErrors.number) setFormErrors({ ...formErrors, number: '' });
-              }}
-              fullWidth
-              required
-              error={!!formErrors.number}
-              helperText={formErrors.number}
-              inputProps={{ maxLength: 20 }}
-            />
-            <TextField
-              label="Torre"
-              value={formData.tower}
-              onChange={(e) => {
-                const value = e.target.value.slice(0, 50);
-                setFormData({ ...formData, tower: value });
-                if (formErrors.tower) setFormErrors({ ...formErrors, tower: '' });
-              }}
-              fullWidth
-              required
-              error={!!formErrors.tower}
-              helperText={formErrors.tower}
-              inputProps={{ maxLength: 50 }}
-            />
-            <TextField
-              label="Piso"
-              type="text"
-              value={formData.floor}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 3);
-                setFormData({ ...formData, floor: value });
-                if (formErrors.floor) setFormErrors({ ...formErrors, floor: '' });
-              }}
-              fullWidth
-              required
-              error={!!formErrors.floor}
-              helperText={formErrors.floor}
-              inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 3 }}
-            />
-            <TextField
-              select
-              label="Tipo"
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              fullWidth
-              placeholder="Ej: Familiar, estudio, etc.."
-            >
-            <MenuItem value="">Ninguno</MenuItem>
-            <MenuItem value="studioApartment">Apartaestudio</MenuItem>
-            <MenuItem value="oneApartment">Apartamento de 1 habitación</MenuItem>
-            <MenuItem value="twoApartment">Apartamento de 2 habitaciones</MenuItem>
-            <MenuItem value="threeApartment">Apartamento de 3 habitaciones</MenuItem>
-            <MenuItem value="duplex">Dúplex</MenuItem>
-            <MenuItem value="penthouse">Penthouse</MenuItem>
-            <MenuItem value="loft">Loft</MenuItem>
-            <MenuItem value="gardenApartment">Apartamento jardín</MenuItem>
-          </TextField>
-            <TextField
-              select
-              label="Asignar Usuario"
-              value={formData.assignedUserId}
-              onChange={(e) => setFormData({ ...formData, assignedUserId: e.target.value })}
-              fullWidth
-            >
-              <MenuItem value="">Ninguno</MenuItem>
-              {users.map((user) => (
-                <MenuItem key={user.id} value={user.id}>
-                  {user.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Rol Asignado"
-              value={formData.assignedRole}
-              onChange={(e) => setFormData({ ...formData, assignedRole: e.target.value })}
-              fullWidth
-            >
-              <MenuItem value="">Ninguno</MenuItem>
-              <MenuItem value="owner">Propietario</MenuItem>
-              <MenuItem value="tenant">Arrendatario</MenuItem>
-              <MenuItem value="airbnb_guest">Huésped Airbnb</MenuItem>
-            </TextField>
-            <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', mt: 2, mb: 2 }}>
-              <Button
-                variant={formData.status === 'owner_occupied' ? 'contained' : 'outlined'}
-                onClick={() => setFormData({ ...formData, status: 'owner_occupied' })}
-                sx={{
-                  flex: 1,
-                  mr: 1,
-                  borderRadius: '8px',
-                  backgroundColor: formData.status === 'owner_occupied' ? '#004272' : '#fff',
-                  color: formData.status === 'owner_occupied' ? '#fff' : '#004272',
-                  borderColor: '#004272',
-                  '&:hover': {
-                    backgroundColor: formData.status === 'owner_occupied' ? '#002a4a' : '#f0f4f8',
-                  },
-                }}
-              >
-                Propiedad
-              </Button>
-              <Button
-                variant={formData.status === 'rented' ? 'contained' : 'outlined'}
-                onClick={() => setFormData({ ...formData, status: 'rented' })}
-                sx={{
-                  flex: 1,
-                  mr: 1,
-                  borderRadius: '8px',
-                  backgroundColor: formData.status === 'rented' ? '#004272' : '#fff',
-                  color: formData.status === 'rented' ? '#fff' : '#004272',
-                  borderColor: '#004272',
-                  '&:hover': {
-                    backgroundColor: formData.status === 'rented' ? '#002a4a' : '#f0f4f8',
-                  },
-                }}
-              >
-                Arriendo
-              </Button>
-              <Button
-                variant={formData.status === 'airbnb' ? 'contained' : 'outlined'}
-                onClick={() => setFormData({ ...formData, status: 'airbnb' })}
-                sx={{
-                  flex: 1,
-                  borderRadius: '8px',
-                  backgroundColor: formData.status === 'airbnb' ? '#004272' : '#fff',
-                  color: formData.status === 'airbnb' ? '#fff' : '#004272',
-                  borderColor: '#004272',
-                  '&:hover': {
-                    backgroundColor: formData.status === 'airbnb' ? '#002a4a' : '#f0f4f8',
-                  },
-                }}
-              >
-                Airbnb
-              </Button>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={() => {
-              setOpen(false);
-              setFormErrors({});
-              setFormAlert('');
-            }}
-            variant="outlined"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={editing ? handleUpdate : handleCreate} 
-            variant="contained"
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
-          >
-            {editing ? 'Actualizar' : 'Crear'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%', borderRadius: '12px' }}>
+          {success}
+        </Alert>
+      </Snackbar>
 
       <ConfirmDialog
         open={deleteDialog.open}
@@ -605,17 +456,6 @@ const Apartments = () => {
         confirmText="Eliminar"
         cancelText="Cancelar"
       />
-
-      <Snackbar
-        open={!!success}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
-          {success}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };
