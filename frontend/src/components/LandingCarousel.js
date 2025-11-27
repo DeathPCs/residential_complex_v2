@@ -28,7 +28,7 @@ const LandingCarousel = ({ features }) => {
             <Card
               sx={{
                 position: 'relative',
-                height: 600,
+                height: 550,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'flex-end',
@@ -74,7 +74,7 @@ const LandingCarousel = ({ features }) => {
                   variant="h5"
                   sx={{
                     fontWeight: 1000,
-                    fontSize: 50,
+                    fontSize: { xs: 30, md: 50 },
                     mb: 1,
                     textShadow: '0 2px 4px rgba(0,0,0,0.5)',
                   }}
@@ -88,7 +88,7 @@ const LandingCarousel = ({ features }) => {
                     opacity: 0.9,
                     letterSpacing: '0.01em',
                     textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-                    fontSize: 20
+                    fontSize: { xs: 14, md: 20 }
                   }}
                 >
                   {feature.description}

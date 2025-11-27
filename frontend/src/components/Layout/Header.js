@@ -39,6 +39,9 @@ const Header = ({ onMenuClick }) => {
       sx={{
         backgroundColor: 'primary.main',
         zIndex: theme.zIndex.drawer + 1,
+        width: { md: 'calc(100% - 280px)' }, // Subtract sidebar width on desktop
+        ml: { md: '280px' }, // Sidebar width
+        height: 64,
       }}
     >
       <Toolbar>
@@ -68,9 +71,10 @@ const Header = ({ onMenuClick }) => {
           sx={{
             flexGrow: 1,
             display: { xs: 'block', sm: 'none' }, // Show on very small screens
+            fontSize: '0.9rem', // Smaller font for small screens
           }}
         >
-          NexoHome
+          ¡Bienvenido a NexoHome!
         </Typography>
         {user ? (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

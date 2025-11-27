@@ -243,7 +243,7 @@ const Payments = () => {
     switch (status) {
       case 'paid': return 'Pagado';
       case 'pending': return 'Pendiente';
-      case 'overdue': return 'Mora';
+      case 'overdue': return 'Retrasado';
       default: return status;
     }
   };

@@ -185,7 +185,7 @@ const Dashboard = () => {
           Dashboard
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ letterSpacing: '0.01em' }}>
-          Bienvenido al sistema de gestión de conjuntos residenciales - NexoHome
+          Bienvenido al sistema de gestión de conjuntos residenciales.
         </Typography>
       </Box>
 

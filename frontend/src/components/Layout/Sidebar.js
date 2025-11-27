@@ -127,11 +127,12 @@ const Sidebar = ({ open, onClose, variant = 'temporary' }) => {
           '& .MuiDrawer-paper': {
             width: 280,
             boxSizing: 'border-box',
-            top: 64, // Header height
-            height: 'calc(100vh - 64px)',
             borderRight: 'none', // Remove border
             position: 'fixed',
             left: 0,
+            top: 0,
+            height: '100vh',
+            zIndex: (theme) => theme.zIndex.drawer + 2,
             overflow: 'hidden', // Prevent scrollbar
           },
         }}
