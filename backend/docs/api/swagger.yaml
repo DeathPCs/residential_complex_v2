@@ -267,6 +267,243 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Obtener lista de usuarios con paginación y filtros
+      description: Lista de usuarios con filtros opcionales por email y paginación
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          description: Filtrar por email
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Número de página
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Número de usuarios por página
+      responses:
+        200:
+          description: Lista de usuarios obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        email:
+                          type: string
+                        cedula:
+                          type: string
+                        phone:
+                          type: string
+                        role:
+                          type: string
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        401:
+          description: No autorizado
+        403:
+          description: No tiene permisos de administrador
+
+    post:
+      tags: [Users]
+      summary: Crear un nuevo usuario
+      description: Crear un nuevo usuario en el sistema
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - cedula
+                - password
+                - role
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  description: Nombre completo del usuario
+                email:
+                  type: string
+                  format: email
+                  description: Email del usuario
+                cedula:
+                  type: string
+                  minLength: 5
+                  maxLength: 20
+                  description: Número de cédula
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 15
+                  description: Número de teléfono
+                password:
+                  type: string
+                  minLength: 6
+                  description: Contraseña del usuario
+                role:
+                  type: string
+                  description: Rol del usuario
+      responses:
+        201:
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Usuario creado exitosamente"
+                  data:
+                    type: object
+                    description: Usuario creado
+        400:
+          description: Datos inválidos
+        401:
+          description: No autorizado
+        403:
+          description: No tiene permisos de administrador
+
+  /api/users/{id}:
+    put:
+      tags: [Users]
+      summary: Actualizar un usuario por ID
+      description: Actualizar información de un usuario específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID del usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  description: Nombre completo del usuario
+                email:
+                  type: string
+                  format: email
+                  description: Email del usuario
+                cedula:
+                  type: string
+                  minLength: 5
+                  maxLength: 20
+                  description: Número de cédula
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 15
+                  description: Número de teléfono
+                role:
+                  type: string
+                  description: Rol del usuario
+      responses:
+        200:
+          description: Usuario actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    description: Usuario actualizado
+        400:
+          description: Datos inválidos
+        401:
+          description: No autorizado
+        403:
+          description: No tiene permisos de administrador
+        404:
+          description: Usuario no encontrado
+
+    delete:
+      tags: [Users]
+      summary: Eliminar un usuario por ID
+      description: Eliminar un usuario del sistema
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID del usuario a eliminar
+      responses:
+        200:
+          description: Usuario eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Usuario eliminado"
+        401:
+          description: No autorizado
+        403:
+          description: No tiene permisos de administrador
+        404:
+          description: Usuario no encontrado
+
   /api/airbnb/guests:
     post:
       tags: [Airbnb]
@@ -326,6 +563,27 @@ paths:
                   message:
                     type: string
                     example: Huésped Airbnb registrado exitosamente. Sistema notificó automáticamente.
+    get:
+      tags: [Airbnb]
+      summary: Get Airbnb Guests
+      description: Get list of Airbnb guests
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of Airbnb guests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AirbnbGuest'
 
   /api/airbnb/guests/{id}/checkin:
     put:
@@ -441,6 +699,118 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ActiveGuest'
+
+  /api/airbnb/guests/{id}:
+    put:
+      tags: [Airbnb]
+      summary: Update Airbnb Guest
+      description: Update an existing Airbnb guest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                guestName:
+                  type: string
+                  example: Juan Pérez García
+                  description: Guest name
+                guestCedula:
+                  type: string
+                  example: "12345678"
+                  description: Guest cedula
+                numberOfGuests:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  example: 2
+                  description: Number of guests
+                checkInDate:
+                  type: string
+                  format: date
+                  example: "2025-01-01"
+                  description: Check-in date
+                checkOutDate:
+                  type: string
+                  format: date
+                  example: "2025-01-07"
+                  description: Check-out date
+      responses:
+        200:
+          description: Guest updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AirbnbGuest'
+                  message:
+                    type: string
+                    example: Guest updated successfully
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Airbnb]
+      summary: Delete Airbnb Guest
+      description: Delete an Airbnb guest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Guest deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Guest deleted successfully
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/apartments:
     get:
@@ -572,6 +942,117 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+    put:
+      tags: [Apartments]
+      summary: Actualizar Apartamento
+      description: |
+        **OWNER/ADMIN:** Actualizar información de un apartamento.
+        Solo el propietario o administrador pueden modificar.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                number:
+                  type: string
+                  example: "101-A"
+                  description: Número del apartamento
+                tower:
+                  type: string
+                  example: "Torre A"
+                  description: Torre donde se ubica
+                floor:
+                  type: integer
+                  example: 1
+                  description: Piso del apartamento
+                type:
+                  type: string
+                  example: "2 habitaciones"
+                  description: Tipo de apartamento
+                status:
+                  type: string
+                  enum: [owner_occupied, rented, available, maintenance]
+                  description: Estado del apartamento
+      responses:
+        200:
+          description: Apartamento actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Apartment'
+                  message:
+                    type: string
+                    example: Apartamento actualizado exitosamente
+        403:
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Apartamento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Apartments]
+      summary: Eliminar Apartamento
+      description: |
+        **OWNER/ADMIN:** Eliminar un apartamento del sistema.
+        Solo administradores pueden eliminar apartamentos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Apartamento eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Apartamento eliminado exitosamente
+        403:
+          description: Solo administradores pueden eliminar apartamentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Apartamento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/maintenance:
     post:
       tags: [Maintenance]
@@ -656,6 +1137,208 @@ paths:
                     items:
                       $ref: '#/components/schemas/Maintenance'
 
+  /api/maintenance/{id}:
+    get:
+      tags: [Maintenance]
+      summary: Obtener Mantenimiento Específico
+      description: Obtener información detallada de un mantenimiento específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Información del mantenimiento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Maintenance'
+        404:
+          description: Mantenimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Maintenance]
+      summary: Actualizar Mantenimiento
+      description: |
+        **ADMIN:** Actualizar información de un mantenimiento programado.
+        Solo administradores pueden modificar mantenimientos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Mantenimiento Piscina Actualizado
+                  description: Título del mantenimiento
+                description:
+                  type: string
+                  example: Limpieza y mantenimiento general actualizado
+                  description: Descripción detallada
+                area:
+                  type: string
+                  enum: [parque, piscina, ascensor, zonas_comunes, gym, salon_comunal]
+                  description: Área del mantenimiento
+                scheduledDate:
+                  type: string
+                  format: date
+                  example: "2025-01-20"
+                  description: Nueva fecha programada
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  description: Nueva prioridad
+      responses:
+        200:
+          description: Mantenimiento actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Maintenance'
+                  message:
+                    type: string
+                    example: Mantenimiento actualizado exitosamente
+        403:
+          description: Solo administradores pueden actualizar mantenimientos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Mantenimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Maintenance]
+      summary: Eliminar Mantenimiento
+      description: |
+        **ADMIN:** Eliminar un mantenimiento programado del sistema.
+        Solo administradores pueden eliminar mantenimientos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Mantenimiento eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Mantenimiento eliminado exitosamente
+        403:
+          description: Solo administradores pueden eliminar mantenimientos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Mantenimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/maintenance/{id}/status:
+    put:
+      tags: [Maintenance]
+      summary: Actualizar Estado del Mantenimiento
+      description: |
+        **ADMIN:** Actualizar el estado de un mantenimiento (pending, in_progress, completed).
+        Solo administradores pueden cambiar el estado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, in_progress, completed]
+                  example: in_progress
+                  description: Nuevo estado del mantenimiento
+      responses:
+        200:
+          description: Estado del mantenimiento actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Maintenance'
+                  message:
+                    type: string
+                    example: Estado del mantenimiento actualizado exitosamente
+        403:
+          description: Solo administradores pueden actualizar el estado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Mantenimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/damage-reports:
     post:
       tags: [Damage Reports]
@@ -703,6 +1386,34 @@ paths:
                     type: string
                     example: Reporte de daño creado. Propietario ha sido notificado automáticamente.
 
+    get:
+      tags: [Damage Reports]
+      summary: List Damage Reports (Admin)
+      description: Admin can list all damage reports
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of damage reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DamageReport'
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/damage-reports/my-reports:
     get:
       tags: [Damage Reports]
@@ -725,6 +1436,199 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/DamageReport'
+
+  /api/damage-reports/{id}:
+    get:
+      tags: [Damage Reports]
+      summary: Get Damage Report by ID
+      description: Get a specific damage report by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Damage report details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/DamageReport'
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Damage report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Damage Reports]
+      summary: Update Damage Report
+      description: Update an existing damage report
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Updated damage report title
+                  description: Updated title
+                description:
+                  type: string
+                  example: Updated description
+                  description: Updated description
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  description: Updated priority
+      responses:
+        200:
+          description: Damage report updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/DamageReport'
+                  message:
+                    type: string
+                    example: Damage report updated successfully
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Damage report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Damage Reports]
+      summary: Delete Damage Report
+      description: Delete a damage report
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Damage report deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Damage report deleted successfully
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Damage report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/damage-reports/{id}/status:
+    put:
+      tags: [Damage Reports]
+      summary: Update Damage Report Status
+      description: Update the status of a damage report
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [reported, acknowledged, in_progress, resolved]
+                  example: in_progress
+                  description: New status for the damage report
+      responses:
+        200:
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/DamageReport'
+                  message:
+                    type: string
+                    example: Damage report status updated successfully
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Damage report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/notifications:
     get:
@@ -933,6 +1837,112 @@ paths:
                     type: string
                     example: Pago registrado como realizado
 
+  /api/payments/{id}:
+    put:
+      tags: [Payments]
+      summary: Actualizar Pago
+      description: |
+        **ADMIN:** Actualizar información de un pago.
+        Solo administradores pueden modificar pagos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  example: 160000
+                  description: Nuevo monto del pago
+                dueDate:
+                  type: string
+                  format: date
+                  example: "2025-02-15"
+                  description: Nueva fecha límite de pago
+                description:
+                  type: string
+                  example: "Cuota de administración actualizada - Febrero 2025"
+                  description: Nueva descripción del pago
+      responses:
+        200:
+          description: Pago actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Payment'
+                  message:
+                    type: string
+                    example: Pago actualizado exitosamente
+        403:
+          description: Solo administradores pueden actualizar pagos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Pago no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Payments]
+      summary: Eliminar Pago
+      description: |
+        **ADMIN:** Eliminar un pago del sistema.
+        Solo administradores pueden eliminar pagos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Pago eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Pago eliminado exitosamente
+        403:
+          description: Solo administradores pueden eliminar pagos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Pago no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/payments/overdue:
     get:
       tags: [Payments]
@@ -960,6 +1970,8 @@ paths:
                   message:
                     type: string
                     example: Pagos en mora verificados. Propietarios notificados automáticamente.
+
+
 
 components:
   securitySchemes:
@@ -1243,176 +2255,6 @@ components:
         ownerNotified:
           type: boolean
           example: true
-                  notificationDate:
+        notificationDate:
           type: string
           format: date-time
-
-  /api/users:
-    get:
-      tags: [Users]
-      summary: Listar Usuarios (Admin)
-      description: |
-        **SOLO ADMIN:** Obtener lista completa de usuarios del sistema.
-        Incluye filtros para búsqueda y paginación.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: role
-          in: query
-          description: Filtrar por rol de usuario
-          schema:
-            type: string
-            enum: [admin, owner, tenant, security]
-        - name: isActive
-          in: query
-          description: Filtrar por estado activo
-          schema:
-            type: boolean
-      responses:
-        200:
-          description: Lista de usuarios
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/User'
-        403:
-          description: Solo administradores pueden listar usuarios
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/users/{id}:
-    get:
-      tags: [Users]
-      summary: Obtener Usuario Específico
-      description: |
-        Obtener información de un usuario específico.
-        Admin puede ver cualquier usuario, otros solo su perfil.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        200:
-          description: Información del usuario
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/User'
-        403:
-          description: Sin permisos para ver este usuario
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        404:
-          description: Usuario no encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    put:
-      tags: [Users]
-      summary: Actualizar Usuario
-      description: |
-        Actualizar información del usuario.
-        Admin puede actualizar cualquier usuario, otros solo su perfil.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "Juan Pérez Actualizado"
-                phone:
-                  type: string
-                  example: "+57 300 999 8888"
-                role:
-                  type: string
-                  enum: [admin, owner, tenant, security]
-                  description: Solo Admin puede cambiar roles
-                isActive:
-                  type: boolean
-                  description: Solo Admin puede cambiar estado
-      responses:
-        200:
-          description: Usuario actualizado exitosamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/User'
-                  message:
-                    type: string
-                    example: Usuario actualizado exitosamente
-
-    delete:
-      tags: [Users]
-      summary: Eliminar Usuario (Admin)
-      description: |
-        **SOLO ADMIN:** Eliminar usuario del sistema.
-        Acción irreversible, usar con precaución.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        200:
-          description: Usuario eliminado exitosamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Usuario eliminado exitosamente
-        403:
-          description: Solo administradores pueden eliminar usuarios
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'

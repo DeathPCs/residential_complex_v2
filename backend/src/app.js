@@ -162,7 +162,6 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/damage-reports', damageReportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/rentals', rentalRoutes);
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
