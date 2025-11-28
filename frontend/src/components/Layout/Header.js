@@ -33,6 +33,13 @@ const Header = ({ onMenuClick }) => {
     handleClose();
   };
 
+  const roleTranslations = {
+    admin: "Administrador",
+    owner: "Propietario",
+    tenant: "Arrendatario",
+    airbnb_guest: "Airbnb"
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -85,7 +92,22 @@ const Header = ({ onMenuClick }) => {
                 display: { xs: 'none', sm: 'block' }, // Hide user name on small screens
               }}
             >
-              {user.name} ({user.role})
+              <Box sx={{ textAlign: 'right', mr: 1, display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  {user.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    fontSize: '0.7rem',
+                  }}
+                >
+                  {roleTranslations[user.role] || user.role}
+                </Typography>
+              </Box>
             </Typography>
             <IconButton
               size="large"

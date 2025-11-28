@@ -49,6 +49,74 @@ router.get('/', auth, roleAuth(['admin', 'owner', 'tenant', 'airbnb_guest']), as
     }
 });
 
+/**
+ * @swagger
+ * /api/apartments:
+ *   post:
+ *     summary: Crear un nuevo apartamento
+ *     tags: [Apartments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - number
+ *               - tower
+ *               - floor
+ *             properties:
+ *               number:
+ *                 type: string
+ *                 description: Número del apartamento
+ *               tower:
+ *                 type: string
+ *                 description: Torre del apartamento
+ *               floor:
+ *                 type: integer
+ *                 description: Piso del apartamento
+ *               status:
+ *                 type: string
+ *                 enum: [vacant, owner_occupied, rented, airbnb]
+ *                 default: vacant
+ *                 description: Estado del apartamento
+ *               type:
+ *                 type: string
+ *                 description: Tipo de apartamento
+ *               assignedUserId:
+ *                 type: string
+ *                 description: ID del usuario asignado
+ *               assignedRole:
+ *                 type: string
+ *                 enum: [owner, tenant]
+ *                 description: Rol del usuario asignado
+ *     responses:
+ *       201:
+ *         description: Apartamento creado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   description: Apartamento creado
+ *                 message:
+ *                   type: string
+ *                   example: "Apartamento registrado exitosamente"
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ */
+
 router.post('/', auth, roleAuth(['admin']), async (req, res, next) => {
     try {
         const { number, tower, floor, status, type, assignedUserId, assignedRole } = req.body;
@@ -94,6 +162,78 @@ router.post('/', auth, roleAuth(['admin']), async (req, res, next) => {
         next({ statusCode: 500, message: 'Error al registrar apartamento', details: error.message, stack: error.stack, body: req.body });
     }
 });
+
+/**
+ * @swagger
+ * /api/apartments/{id}:
+ *   put:
+ *     summary: Actualizar un apartamento por ID
+ *     tags: [Apartments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del apartamento
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               number:
+ *                 type: string
+ *                 description: Número del apartamento
+ *               tower:
+ *                 type: string
+ *                 description: Torre del apartamento
+ *               floor:
+ *                 type: integer
+ *                 description: Piso del apartamento
+ *               status:
+ *                 type: string
+ *                 enum: [vacant, owner_occupied, rented, airbnb]
+ *                 description: Estado del apartamento
+ *               type:
+ *                 type: string
+ *                 description: Tipo de apartamento
+ *               assignedUserId:
+ *                 type: string
+ *                 description: ID del usuario asignado
+ *               assignedRole:
+ *                 type: string
+ *                 enum: [owner, tenant]
+ *                 description: Rol del usuario asignado
+ *     responses:
+ *       200:
+ *         description: Apartamento actualizado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   description: Apartamento actualizado
+ *                 message:
+ *                   type: string
+ *                   example: "Apartamento actualizado exitosamente"
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ *       404:
+ *         description: Apartamento no encontrado
+ */
 
 router.put('/:id', auth, roleAuth(['admin']), async (req, res, next) => {
     try {
@@ -167,6 +307,43 @@ router.put('/:id', auth, roleAuth(['admin']), async (req, res, next) => {
         next({ statusCode: 500, message: 'Error al actualizar apartamento', details: error.message, stack: error.stack, params: { id: req.params.id, body: req.body } });
     }
 });
+
+/**
+ * @swagger
+ * /api/apartments/{id}:
+ *   delete:
+ *     summary: Eliminar un apartamento por ID
+ *     tags: [Apartments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del apartamento a eliminar
+ *     responses:
+ *       200:
+ *         description: Apartamento eliminado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Apartamento eliminado exitosamente"
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ *       404:
+ *         description: Apartamento no encontrado
+ */
 
 router.delete('/:id', auth, roleAuth(['admin']), async (req, res, next) => {
     try {

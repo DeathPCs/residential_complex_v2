@@ -39,6 +39,10 @@ AirbnbGuest.init({
     allowNull: false,
     defaultValue: 'pending'
   },
+  apartmentType: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW

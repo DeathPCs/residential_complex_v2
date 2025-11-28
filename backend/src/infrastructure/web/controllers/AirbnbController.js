@@ -4,6 +4,14 @@ class AirbnbController {
     async registerGuest(req, res, next) {
         try {
             const { apartmentId, guestName, guestCedula, numberOfGuests, checkInDate, checkOutDate } = req.body;
+
+            // Fetch apartment type if apartmentId is provided
+            let apartmentType = null;
+            if (apartmentId) {
+                const apartment = await prismaService.getApartmentById(apartmentId);
+                apartmentType = apartment?.type || null;
+            }
+
             const newGuest = await prismaService.createAirbnbGuest({
                 apartmentId: apartmentId || null,
                 guestName,
@@ -11,7 +19,8 @@ class AirbnbController {
                 numberOfGuests,
                 checkInDate: new Date(checkInDate),
                 checkOutDate: new Date(checkOutDate),
-                status: 'pending'
+                status: 'pending',
+                apartmentType
             });
             
             // Notificar al propietario del apartamento si existe

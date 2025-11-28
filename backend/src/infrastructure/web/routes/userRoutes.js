@@ -6,6 +6,76 @@ const roleAuth = require('../middleware/roleAuth');
 const prismaService = require('../../database/prismaService');
 const AuthService = require('../../../domain/services/AuthService');
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Obtener lista de usuarios con paginación y filtros
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Filtrar por email
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Número de usuarios por página
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       cedula:
+ *                         type: string
+ *                       phone:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                 total:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ */
+
 // GET /api/users?email=...&page=...&limit=...
 router.get('/', auth, roleAuth(['admin']), [
     query('email').optional().isEmail().withMessage('Email inválido'),
@@ -37,6 +107,74 @@ router.get('/', auth, roleAuth(['admin']), [
     }
 });
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Actualizar un usuario por ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Nombre completo del usuario
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email del usuario
+ *               cedula:
+ *                 type: string
+ *                 minLength: 5
+ *                 maxLength: 20
+ *                 description: Número de cédula
+ *               phone:
+ *                 type: string
+ *                 minLength: 7
+ *                 maxLength: 15
+ *                 description: Número de teléfono
+ *               role:
+ *                 type: string
+ *                 description: Rol del usuario
+ *     responses:
+ *       200:
+ *         description: Usuario actualizado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   description: Usuario actualizado
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ *       404:
+ *         description: Usuario no encontrado
+ */
+
 // PUT /api/users/:id
 router.put('/:id', auth, roleAuth(['admin']), [
     param('id').isString().withMessage('ID inválido'),
@@ -61,6 +199,78 @@ router.put('/:id', auth, roleAuth(['admin']), [
         next({ statusCode: 500, message: 'Error al actualizar usuario', details: error.message, stack: error.stack, params: { id: req.params.id, body: req.body } });
     }
 });
+
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Crear un nuevo usuario
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - cedula
+ *               - password
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Nombre completo del usuario
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email del usuario
+ *               cedula:
+ *                 type: string
+ *                 minLength: 5
+ *                 maxLength: 20
+ *                 description: Número de cédula
+ *               phone:
+ *                 type: string
+ *                 minLength: 7
+ *                 maxLength: 15
+ *                 description: Número de teléfono
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: Contraseña del usuario
+ *               role:
+ *                 type: string
+ *                 description: Rol del usuario
+ *     responses:
+ *       201:
+ *         description: Usuario creado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario creado exitosamente"
+ *                 data:
+ *                   type: object
+ *                   description: Usuario creado
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ */
 
 // POST /api/users
 router.post('/', auth, roleAuth(['admin']), [
@@ -91,6 +301,43 @@ router.post('/', auth, roleAuth(['admin']), [
         next({ statusCode: 500, message: 'Error al crear usuario', details: error.message, stack: error.stack, params: req.body });
     }
 });
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Eliminar un usuario por ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del usuario a eliminar
+ *     responses:
+ *       200:
+ *         description: Usuario eliminado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario eliminado"
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos de administrador
+ *       404:
+ *         description: Usuario no encontrado
+ */
 
 // DELETE /api/users/:id
 router.delete('/:id', auth, roleAuth(['admin']), [

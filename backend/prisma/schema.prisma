@@ -42,8 +42,8 @@ model Apartment {
   type          String?
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
-  owner         User?           @relation(fields: [ownerId], references: [id])
-  assignedUser  User?           @relation("AssignedApartments", fields: [assignedUserId], references: [id])
+  owner         User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  assignedUser  User?           @relation("AssignedApartments", fields: [assignedUserId], references: [id], onDelete: SetNull)
   airbnbGuests  AirbnbGuest[]
   damageReports DamageReport[]
   payments      Payment[]
@@ -60,6 +60,7 @@ model AirbnbGuest {
   checkInDate     DateTime  @map("check_in_date")
   checkOutDate    DateTime  @map("check_out_date")
   status          String    @default("pending")
+  apartmentType   String?   @map("apartment_type")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   apartmentId     String?   @map("apartment_id")
@@ -79,8 +80,8 @@ model DamageReport {
   images      String[]
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-  apartment   Apartment @relation(fields: [apartmentId], references: [id])
-  reporter    User      @relation(fields: [reportedBy], references: [id])
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  reporter    User      @relation(fields: [reportedBy], references: [id], onDelete: Cascade)
 
   @@map("damage_reports")
 }
@@ -108,7 +109,7 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -124,8 +125,8 @@ model Payment {
   paidDate    DateTime? @map("paid_date")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  user        User     @relation(fields: [userId], references: [id])
-  apartment   Apartment? @relation(fields: [apartmentId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apartment   Apartment? @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
 
   @@map("payments")
 }

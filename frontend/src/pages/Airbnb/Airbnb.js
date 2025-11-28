@@ -2,9 +2,9 @@ import React, { useEffect, useState, useContext, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { Container, Typography, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Paper, InputAdornment, IconButton, Grid, Card, CardContent, Alert, Snackbar, } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Add, Search, CheckCircle, Delete, Hotel, Person, Event, AccessTime, Edit,
+import { Add, Search, CheckCircle, Delete, Hotel, Person, Event, AccessTime, Edit, PersonAdd,
 } from '@mui/icons-material';
-import { getAirbnbGuests, getActiveAirbnbGuests, createAirbnbGuest, updateAirbnbGuest, checkinAirbnbGuest, checkoutAirbnbGuest, deleteAirbnbGuest, getApartments, } from '../../services/api';
+import { getAirbnbGuests, getActiveAirbnbGuests, createAirbnbGuest, updateAirbnbGuest, checkinAirbnbGuest, checkoutAirbnbGuest, deleteAirbnbGuest, getApartments, createApartment, updateApartment, getUsers, } from '../../services/api';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const Airbnb = () => {
@@ -31,11 +31,27 @@ const Airbnb = () => {
     checkInDate: '',
     checkOutDate: '',
   });
+  const [users, setUsers] = useState([]);
+  const [assignDialog, setAssignDialog] = useState({ open: false, apartment: null });
+  const [assignFormData, setAssignFormData] = useState({
+    assignedUserId: '',
+    assignedRole: '',
+  });
+  const [apartmentDialog, setApartmentDialog] = useState(false);
+  const [apartmentFormData, setApartmentFormData] = useState({
+    number: '',
+    tower: '',
+    floor: '',
+    status: 'airbnb',
+    type: '',
+  });
+  const [apartmentFormErrors, setApartmentFormErrors] = useState({});
 
   useEffect(() => {
     fetchGuests();
     fetchActiveGuests();
     fetchApartments();
+    fetchUsers();
   }, []);
 
   const fetchGuests = async () => {
@@ -72,6 +88,15 @@ const Airbnb = () => {
       setApartments(apartmentsData || []);
     } catch (error) {
       console.error('Error fetching apartments:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const usersData = await getUsers();
+      setUsers(usersData || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
     }
   };
 
@@ -229,8 +254,8 @@ const Airbnb = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'warning';
-      case 'checked_in': return 'info';
-      case 'checked_out': return 'success';
+      case 'checked_in': return 'success';
+      case 'checked_out': return 'error';
       default: return 'default';
     }
   };
@@ -238,11 +263,22 @@ const Airbnb = () => {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'pending': return 'Pendiente';
-      case 'checked_in': return 'Registrado';
-      case 'checked_out': return 'Revisado';
+      case 'checked_in': return 'Ingreso';
+      case 'checked_out': return 'Salida';
       default: return status;
     }
   };
+
+    const typeTranslations = {
+    studioApartment: "Apartaestudio",
+    oneApartment: "Apartamento de 1 habitación",
+    twoApartment: "Apartamento de 2 habitaciones",
+    threeApartment: "Apartamento de 3 habitaciones",
+    duplex: "Dúplex",
+    penthouse: "Penthouse",
+    loft: "Loft",
+    gardenApartment: "Apartamento jardín"
+  }; 
 
   const columns = [
     {
@@ -252,6 +288,15 @@ const Airbnb = () => {
       renderCell: (params) => {
         const apartment = apartments.find(a => a.id === params.row.apartmentId);
         return apartment ? `Torre ${apartment.tower} - Apt ${apartment.number}` : 'N/A';
+      },
+    },
+    {
+      field: 'apartmentType',
+      headerName: 'Tipo',
+      width: 150,
+      renderCell: (params) => {
+        const apartment = apartments.find(a => a.id === params.row.apartmentId);
+        return apartment ? `${typeTranslations[apartment.type]}` : 'N/A';
       },
     },
     {
@@ -472,7 +517,7 @@ const Airbnb = () => {
         </Box>
       </Paper>
 
-      <Dialog 
+      <Dialog
         open={open} 
         onClose={() => {
           setOpen(false);
@@ -513,7 +558,7 @@ const Airbnb = () => {
               helperText={formErrors.apartmentId}
             >
               <MenuItem value="">Ninguno</MenuItem>
-              {apartments.map((apartment) => (
+              {apartments.filter(apartment => apartment.status === 'airbnb').map((apartment) => (
                 <MenuItem key={apartment.id} value={apartment.id}>
                   Torre {apartment.tower} - Piso {apartment.floor} - Apartamento {apartment.number}
                 </MenuItem>
@@ -647,6 +692,18 @@ const Airbnb = () => {
       >
         <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%', borderRadius: '12px', boxShadow: 6 }}>
           {success}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={3000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{ borderRadius: '12px', boxShadow: 6 }}
+      >
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%', borderRadius: '12px', boxShadow: 6 }}>
+          {error}
         </Alert>
       </Snackbar>
     </Container>

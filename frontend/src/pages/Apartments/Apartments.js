@@ -28,6 +28,7 @@ import {
   Edit,
   Delete,
   Refresh,
+  PersonAdd,
 } from '@mui/icons-material';
 import { getApartments, createApartment, updateApartment, deleteApartment, getUsers } from '../../services/api';
 import Loading from '../../components/common/Loading';
@@ -45,17 +46,20 @@ const Apartments = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, number: '' });
+  const [assignDialog, setAssignDialog] = useState({ open: false, apartment: null });
   const [formErrors, setFormErrors] = useState({});
   const [formAlert, setFormAlert] = useState('');
+  const [assignFormData, setAssignFormData] = useState({
+    assignedUserId: '',
+    assignedRole: '',
+  });
   const [formData, setFormData] = useState({
     number: '',
     tower: '',
     floor: '',
-    status: 'owner_occupied',
+    status: '',
     type: '',
-    assignedUserId: '',
     ownerId: '',
-    assignedRole: '',
   });
   const [users, setUsers] = useState([]);
   const fetchInProgress = useRef(false);
@@ -135,12 +139,12 @@ const Apartments = () => {
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       await createApartment(formData);
       setSuccess('Apartamento creado exitosamente');
       setOpen(false);
-      setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
+      setFormData({ number: '', tower: '', floor: '', status: '', type: '' });
       setFormErrors({});
       setFormAlert('');
       fetchApartments();
@@ -154,13 +158,13 @@ const Apartments = () => {
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       await updateApartment(editing.id, formData);
       setSuccess('Apartamento actualizado exitosamente');
       setOpen(false);
       setEditing(null);
-      setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
+      setFormData({ number: '', tower: '', floor: '', status: '', type: '' });
       setFormErrors({});
       setFormAlert('');
       fetchApartments();
@@ -195,15 +199,41 @@ const Apartments = () => {
       floor: apartment.floor,
       status: apartment.status,
       type: apartment.type,
-      assignedUserId: apartment.assignedUserId || '',
-      assignedRole: apartment.assignedRole || '',
     });
     setFormErrors({});
     setFormAlert('');
     setOpen(true);
   };
 
+  const handleAssign = (apartment) => {
+    setAssignDialog({ open: true, apartment });
+    setAssignFormData({
+      assignedUserId: apartment.assignedUserId || '',
+      assignedRole: apartment.assignedRole || '',
+    });
+  };
+
+  const handleAssignSubmit = async () => {
+    try {
+      await updateApartment(assignDialog.apartment.id, {
+        ...assignDialog.apartment,
+        assignedUserId: assignFormData.assignedUserId,
+        assignedRole: assignFormData.assignedRole,
+      });
+      setSuccess('Usuario asignado exitosamente');
+      setAssignDialog({ open: false, apartment: null });
+      setAssignFormData({ assignedUserId: '', assignedRole: '' });
+      fetchApartments();
+    } catch (error) {
+      console.error('Error assigning user:', error);
+      setError(error.userMessage || 'Error al asignar usuario');
+    }
+  };
+
   const filteredApartments = apartments.filter((apartment) => {
+    // Only show apartments with status 'rented' or 'owner_occupied' (exclude 'airbnb')
+    //if (apartment.status === 'airbnb') return false;
+
     const matchesSearch = apartment.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          apartment.tower?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (apartment.owner && apartment.owner.name ? apartment.owner.name.toLowerCase().includes(searchTerm.toLowerCase()) : false);
@@ -266,7 +296,7 @@ const Apartments = () => {
       width: 200,
       renderCell: (params) => {
         const assignedUser = params.row.assignedUser;
-        return assignedUser ? assignedUser.name : 'N/A';
+        return assignedUser ? assignedUser.name : 'Ninguno';
       },
     },
     {
@@ -299,7 +329,7 @@ const Apartments = () => {
     ...(user?.role === 'admin' ? [{
       field: 'actions',
       headerName: 'Acciones',
-      width: 120,
+      width: 180,
       renderCell: (params) => (
         <Box>
           <IconButton
@@ -309,6 +339,15 @@ const Apartments = () => {
           >
             <Edit />
           </IconButton>
+          {params.row.status !== 'airbnb' && (
+            <IconButton
+              color="secondary"
+              onClick={() => handleAssign(params.row)}
+              title="Asignar"
+            >
+              <PersonAdd />
+            </IconButton>
+          )}
           <IconButton
             color="error"
             onClick={() => handleDeleteClick(params.row.id, params.row.number)}
@@ -398,7 +437,7 @@ const Apartments = () => {
               startIcon={<Add />}
               onClick={() => {
                 setEditing(null);
-                setFormData({ number: '', tower: '', floor: '', status: 'owner_occupied', type: '', assignedUserId: '', assignedRole: '' });
+                setFormData({ number: '', tower: '', floor: '', status: '', type: '' });
                 setFormErrors({});
                 setFormAlert('');
                 setOpen(true);
@@ -428,7 +467,131 @@ const Apartments = () => {
           />
         </Box>
       </Paper>
-      
+
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setFormErrors({});
+          setFormAlert('');
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '16px',
+            boxShadow: 6,
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600, letterSpacing: '0.02em' }}>
+          {editing ? 'Editar Apartamento' : 'Crear Nuevo Apartamento'}
+        </DialogTitle>
+        <DialogContent>
+          {formAlert && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {formAlert}
+            </Alert>
+          )}
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Número"
+              value={formData.number}
+              onChange={(e) => {
+                setFormData({ ...formData, number: e.target.value });
+                if (formErrors.number) setFormErrors({ ...formErrors, number: '' });
+              }}
+              fullWidth
+              required
+              error={!!formErrors.number}
+              helperText={formErrors.number}
+            />
+            <TextField
+              label="Torre"
+              value={formData.tower}
+              onChange={(e) => {
+                setFormData({ ...formData, tower: e.target.value });
+                if (formErrors.tower) setFormErrors({ ...formErrors, tower: '' });
+              }}
+              fullWidth
+              required
+              error={!!formErrors.tower}
+              helperText={formErrors.tower}
+            />
+            <TextField
+              label="Piso"
+              type="number"
+              value={formData.floor}
+              onChange={(e) => {
+                setFormData({ ...formData, floor: e.target.value });
+                if (formErrors.floor) setFormErrors({ ...formErrors, floor: '' });
+              }}
+              fullWidth
+              required
+              error={!!formErrors.floor}
+              helperText={formErrors.floor}
+            />
+            <TextField
+              select
+              label="Estado"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              fullWidth
+              required
+            >
+              <MenuItem value="owner_occupied">En propiedad</MenuItem>
+              <MenuItem value="rented">En Arriendo</MenuItem>
+              <MenuItem value="airbnb">Airbnb</MenuItem>
+            </TextField>
+            <TextField
+              select
+              label="Tipo"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              fullWidth
+            >
+              <MenuItem value="">Ninguno</MenuItem>
+              <MenuItem value="studioApartment">Apartaestudio</MenuItem>
+              <MenuItem value="oneApartment">Apartamento de 1 habitación</MenuItem>
+              <MenuItem value="twoApartment">Apartamento de 2 habitaciones</MenuItem>
+              <MenuItem value="threeApartment">Apartamento de 3 habitaciones</MenuItem>
+              <MenuItem value="duplex">Dúplex</MenuItem>
+              <MenuItem value="penthouse">Penthouse</MenuItem>
+              <MenuItem value="loft">Loft</MenuItem>
+              <MenuItem value="gardenApartment">Apartamento jardín</MenuItem>
+            </TextField>
+
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+              setFormAlert('');
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '12px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={editing ? handleUpdate : handleCreate}
+            variant="contained"
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              transition: 'background-color 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#003354',
+              },
+            }}
+          >
+            {editing ? 'Actualizar' : 'Crear'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={!!success}
@@ -456,6 +619,83 @@ const Apartments = () => {
         confirmText="Eliminar"
         cancelText="Cancelar"
       />
+
+      <Dialog
+        open={assignDialog.open}
+        onClose={() => {
+          setAssignDialog({ open: false, apartment: null });
+          setAssignFormData({ assignedUserId: '', assignedRole: '' });
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            padding: '16px',
+            boxShadow: 6,
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#004272', fontWeight: 600, letterSpacing: '0.02em' }}>
+          Asignar Usuario al Apartamento
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              select
+              label="Usuario"
+              value={assignFormData.assignedUserId}
+              onChange={(e) => setAssignFormData({ ...assignFormData, assignedUserId: e.target.value })}
+              fullWidth
+              required
+            >
+              <MenuItem value="">Seleccionar Usuario</MenuItem>
+              {users.filter((user) => user.role !== 'airbnb').map((user) => (
+                <MenuItem key={user.id} value={user.id}>
+                  {user.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Rol"
+              value={assignFormData.assignedRole}
+              onChange={(e) => setAssignFormData({ ...assignFormData, assignedRole: e.target.value })}
+              fullWidth
+              required
+            >
+              <MenuItem value="owner">Propietario</MenuItem>
+              <MenuItem value="tenant">Inquilino</MenuItem>
+            </TextField>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => {
+              setAssignDialog({ open: false, apartment: null });
+              setAssignFormData({ assignedUserId: '', assignedRole: '' });
+            }}
+            variant="outlined"
+            sx={{ borderRadius: '12px', textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleAssignSubmit}
+            variant="contained"
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              transition: 'background-color 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#003354',
+              },
+            }}
+          >
+            Asignar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

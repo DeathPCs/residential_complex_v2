@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./infrastructure/web/docs/swagger');
 
 // Middleware
 const errorHandler = require('./infrastructure/web/middleware/errorHandler');
@@ -114,6 +116,7 @@ app.get('/health', (req, res) => {
             rentals: '/api/rentals/*'
         },
         documentation: {
+            swaggerUI: 'GET /api-docs - Documentación interactiva con todos los endpoints y esquemas',
             swagger: 'Ver docs/api/swagger.yaml para documentación completa',
             postman: 'Colección de Postman disponible para testing',
             readme: 'Ver README.md para instrucciones de instalación'
@@ -161,34 +164,22 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/rentals', rentalRoutes);
 
-// Welcome message for root endpoint
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        docExpansion: 'none',
+        filter: true,
+        showExtensions: true,
+        showCommonExtensions: true
+    }
+}));
+
+// Redirect root to Swagger documentation
 app.get('/', (req, res) => {
-    res.json({
-        message: '🏢 Bienvenido al Sistema de Conjuntos Residenciales',
-        description: 'API REST para gestión completa de conjuntos residenciales',
-        version: '1.0.0',
-        developer: 'Proyecto Universitario - Universidad Surcolombiana',
-        endpoints: {
-            health: '/health - Estado del sistema',
-            test: '/api/test - Prueba de conectividad',
-            documentation: '/health - Documentación completa de endpoints'
-        },
-        features: [
-            '🏠 Gestión de apartamentos y propietarios',
-            '🛏️ Sistema Airbnb con notificaciones automáticas',
-            '🔧 Mantenimientos programados',
-            '⚠️ Reportes de daños',
-            '💰 Gestión de pagos y mensualidades',
-            '📬 Sistema de notificaciones',
-            '🔐 Control de acceso y seguridad'
-        ],
-        nextSteps: [
-            '1. Verificar estado: GET /health',
-            '2. Probar conectividad: GET /api/test',
-            '3. Autenticarse: POST /api/auth/login',
-            '4. Explorar funcionalidades según documentación'
-        ]
-    });
+    res.redirect('/api-docs');
 });
 
 // Error handling middleware
@@ -209,7 +200,7 @@ app.use('*', (req, res) => {
                 maintenance: 'GET /api/maintenance - Ver mantenimientos',
                 notifications: 'GET /api/notifications - Ver notificaciones'
             },
-            documentation: 'Visita /health para ver todos los endpoints disponibles'
+            documentation: 'Visita /api-docs para ver documentación interactiva o /health para resumen'
         },
         timestamp: new Date().toISOString()
     });

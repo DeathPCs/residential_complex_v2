@@ -108,7 +108,7 @@ const LandingPage = () => {
               borderRadius: '12px',
               textTransform: 'none',
               px: { xs: 2, md: 3 },
-              py: { xs: 0.5, md: 1 },
+              py: { xs: 0.5, md: 0.9 },
               fontSize: { xs: '0.8rem', md: '1rem' },
             }}
           >
@@ -251,7 +251,7 @@ const LandingPage = () => {
           </Grid>
           <Box sx={{ borderTop: 1, borderColor: 'rgba(255,255,255,0.2)', mt: 4, pt: 2, textAlign: 'center' }}>
             <Typography variant="body2">
-              © 2023 NexoHome. Todos los derechos reservados.
+              © 2025 NexoHome. Todos los derechos reservados.
             </Typography>
           </Box>
         </Container>

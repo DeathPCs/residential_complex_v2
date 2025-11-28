@@ -79,6 +79,35 @@ router.post('/login', loginValidation, validate, async (req, res, next) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Obtener información del usuario autenticado
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Información del usuario obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   description: Información del usuario autenticado
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario autenticado"
+ *       401:
+ *         description: No autorizado - Token inválido o expirado
+ */
+
 router.get('/me', auth, async (req, res, next) => {
     try {
         res.json({
